@@ -66,20 +66,22 @@ export async function GET() {
             `
         });
 
-        // step 10: Robustly set dummy@gmail.com to enterprise
+        // step 10: Robustly set enterprise demo user (from env)
+        const demoEmail = process.env.PRO_EMAIL || 'demo@example.com';
         await supabaseAdmin.rpc('run_sql', {
             sql_query: `
                 DO $$
                 DECLARE 
                     tgt_id UUID;
+                    demo_email TEXT := '${demoEmail}';
                 BEGIN
                     -- Try to find the user in auth.users
-                    SELECT id INTO tgt_id FROM auth.users WHERE email = 'dummy@gmail.com' LIMIT 1;
+                    SELECT id INTO tgt_id FROM auth.users WHERE email = demo_email LIMIT 1;
                     
                     IF tgt_id IS NOT NULL THEN
                         -- Ensure profile exists and is enterprise
                         INSERT INTO public.profiles (id, email, full_name, tier)
-                        VALUES (tgt_id, 'dummy@gmail.com', 'Dummy Account', 'enterprise')
+                        VALUES (tgt_id, demo_email, 'Demo Account', 'enterprise')
                         ON CONFLICT (id) DO UPDATE SET tier = 'enterprise';
                     END IF;
                 END $$;

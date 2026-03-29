@@ -549,10 +549,10 @@ export default function AdminDashboardClient() {
     ];
 
     const mockHistory = [
-        { id: 1, action: 'Granted Access', target: 'Pro Tier to john@example.com', author: 'owner@gmail.com', time: '10 mins ago' },
-        { id: 2, action: 'Added Staff', target: 'manager@admin.com as Manager', author: 'owner@gmail.com', time: '1 hour ago' },
-        { id: 3, action: 'Support Reply', target: 'Resolved ticket #1024', author: 'support@admin.com', time: '2 hours ago' },
-        { id: 4, action: 'Revoked Access', target: 'Removed old_support@admin.com', author: 'owner@gmail.com', time: '1 day ago' },
+        { id: 1, action: 'Granted Access', target: 'Pro Tier upgrade authorized', author: 'System Admin', time: '10 mins ago' },
+        { id: 2, action: 'Added Staff', target: 'New Manager onboarded', author: 'System Admin', time: '1 hour ago' },
+        { id: 3, action: 'Support Reply', target: 'Resolved ticket #1024', author: 'Support Agent', time: '2 hours ago' },
+        { id: 4, action: 'Revoked Access', target: 'Removed inactive staff member', author: 'System Admin', time: '1 day ago' },
     ];
     const COLORS = ['#3b82f6', '#8b5cf6', '#10b981'];
 

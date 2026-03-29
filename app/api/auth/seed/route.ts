@@ -16,15 +16,18 @@ export async function GET(req: Request) {
     }
     
     try {
-        const adminEmail = process.env.ADMIN_EMAIL || 'owner@example.com';
+        const adminEmail = process.env.ADMIN_EMAIL;
+        if (!adminEmail) {
+            return NextResponse.json({ error: 'ADMIN_EMAIL environment variable is required' }, { status: 400 });
+        }
         const defaultPass = process.env.DEFAULT_PASSWORD || 'SecurePassword123!';
         
         const usersToCreate = [
             { email: adminEmail, password: defaultPass, name: 'Admin User', tier: 'enterprise', role: 'owner' },
-            { email: process.env.SUPPORT_EMAIL || 'support@example.com', password: defaultPass, name: 'Support Agent', tier: 'enterprise', role: 'support' },
-            { email: process.env.PRO_EMAIL || 'pro@example.com', password: defaultPass, name: 'Pro User', tier: 'pro', role: 'recruiter' },
-            { email: process.env.FREE_EMAIL || 'free@example.com', password: defaultPass, name: 'Free User', tier: 'free', role: 'recruiter' }
-        ];
+            { email: process.env.SUPPORT_EMAIL, password: defaultPass, name: 'Support Agent', tier: 'enterprise', role: 'support' },
+            { email: process.env.PRO_EMAIL, password: defaultPass, name: 'Pro User', tier: 'pro', role: 'recruiter' },
+            { email: process.env.FREE_EMAIL, password: defaultPass, name: 'Free User', tier: 'free', role: 'recruiter' }
+        ].filter(u => u.email);
 
         const { data: { users: existingUsers } } = await supabaseAdmin.auth.admin.listUsers() as any;
         const createdUsers = [];

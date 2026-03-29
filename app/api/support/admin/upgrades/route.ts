@@ -32,7 +32,7 @@ export async function GET() {
                 userThreads[uid] = {
                     id: uid,
                     user_id: uid,
-                    user: 'user@example.com', // Placeholder until joined
+                    user: 'Unknown', // Placeholder until joined
                     name: 'User',
                     messages: [],
                     isActivationNeeded: false,

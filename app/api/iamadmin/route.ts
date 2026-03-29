@@ -92,7 +92,7 @@ export async function GET() {
             if (!uid) return;
             if (!targetObj[uid]) {
                 // Manual fallback since we removed the relational query
-                const profileMatch = usersResult.data?.find((u: any) => u.id === uid) || { full_name: 'User', email: 'user@example.com' };
+                const profileMatch = usersResult.data?.find((u: any) => u.id === uid) || { full_name: 'User', email: 'Unknown' };
                 targetObj[uid] = {
                     id: uid,
                     user_id: uid,

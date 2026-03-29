@@ -35,7 +35,7 @@ export async function GET() {
                     id: uid,
                     user: {
                         id: uid,
-                        email: 'user@example.com',
+                        email: 'Unknown',
                         company_name: 'Recruiter Hub',
                         logo_url: null
                     },
