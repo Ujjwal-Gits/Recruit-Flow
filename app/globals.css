@@ -1,0 +1,128 @@
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+:root {
+  --font-inter: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+body {
+  font-family: var(--font-inter);
+  color: #1e293b; /* slate-800 */
+  background-color: #f8fafc; /* slate-50 */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: #0f172a; /* slate-900 */
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+.flip-book {
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1);
+}
+
+.page {
+    background-color: white;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #e2e8f0;
+    border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #cbd5e1;
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes skeleton-slow {
+  0%, 100% { 
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% { 
+    opacity: 1;
+    transform: scale(1.002);
+  }
+}
+
+.animate-skeleton-slow {
+  animation: skeleton-slow 2s ease-in-out infinite;
+}
+
+/* Hide Next.js 15 dev tools floating indicator */
+nextjs-portal,
+#nextjs-portal,
+div[data-nextjs-toast],
+div[class*="nextjs-portal"] {
+  display: none !important;
+}
+
+@media print {
+  /* Hide Next.js features and sidebar/main content during print */
+  aside, main, nav {
+    display: none !important;
+  }
+
+  /* Treat the background as the page */
+  body {
+    background: white !important;
+  }
+
+  /* Target the modal container and strip away overlays/fixed positioning */
+  .fixed.inset-0 {
+    position: static !important;
+    background: white !important;
+    display: block !important;
+    padding: 0 !important;
+  }
+
+  /* Make the modal fill the page but look centered and properly sized */
+  .fixed.inset-0 > div {
+    max-width: 100% !important;
+    width: 100% !important;
+    box-shadow: none !important;
+    border: none !important;
+    transform: none !important;
+    margin: 0 auto !important;
+  }
+
+  /* Hide close button and action footer */
+  button, .bg-slate-50 {
+    display: none !important;
+  }
+
+  /* Provide padding to act as page margins */
+  #invoice-printable {
+    padding: 1.5cm 2cm !important;
+  }
+
+  /* Force print colors */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Setting @page margin to 0 prevents browser from printing timestamp/url headers */
+  @page {
+    margin: 0;
+  }
+}
