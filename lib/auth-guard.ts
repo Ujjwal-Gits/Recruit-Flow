@@ -25,15 +25,12 @@ export async function getAuthenticatedUser(): Promise<AuthResult | null> {
     try {
         const supabase = await createRouteClient();
         
-        // Use getSession() instead of getUser() — this reads from cookies locally
-        // and does NOT make a network call to the Supabase Auth server.
-        const { data: { session }, error } = await supabase.auth.getSession();
+        // Use getUser() — verifies the token with Supabase Auth server (secure)
+        const { data: { user }, error } = await supabase.auth.getUser();
 
-        if (error || !session?.user || !session.user.email) {
+        if (error || !user || !user.email) {
             return null;
         }
-
-        const user = session.user;
 
         // Fetch profile — only select the columns we actually need
         const { data: profile } = await supabaseAdmin
@@ -43,7 +40,7 @@ export async function getAuthenticatedUser(): Promise<AuthResult | null> {
             .single();
 
         const result: AuthResult = {
-            user: { id: user.id, email: user.email },
+            user: { id: user.id, email: user.email! },
             role: profile?.role || 'recruiter',
             tier: profile?.tier || 'free',
             profile: profile

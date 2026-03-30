@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, Send, X, Image as ImageIcon } from 'lucide-react';
 import BouncyLoader from '@/components/BouncyLoader';
 import { supabase } from '@/lib/supabase';
+import { usePathname } from 'next/navigation';
 
 interface Message {
     id: string;
@@ -17,6 +18,7 @@ interface Message {
 const ADMIN_ROLES = ['owner', 'manager', 'support', 'admin'];
 
 export default function SupportChat() {
+    const pathname = usePathname();
     const [userProfile, setUserProfile] = useState<{ tier: string; role: string; id: string } | null>(null);
     const [loadingProfile, setLoadingProfile] = useState(true);
     const [isOpen, setIsOpen] = useState(false);
@@ -29,6 +31,15 @@ export default function SupportChat() {
     const channelRef = useRef<any>(null);
     const pollRef = useRef<any>(null);
     const [sending, setSending] = useState(false);
+
+    // Close chat and release body lock when navigating to admin/dashboard pages
+    useEffect(() => {
+        if (pathname?.startsWith('/iamadmin') || pathname?.startsWith('/dashboard')) {
+            setIsOpen(false);
+            document.body.style.overflow = '';
+            document.documentElement.style.overflow = '';
+        }
+    }, [pathname]);
 
     // ── 1. Fetch user profile (role + tier) ──────────────────────────────────
     useEffect(() => {
@@ -190,6 +201,7 @@ export default function SupportChat() {
         // Locking document scroll when modal is open to prevent background scrolling
         const originalOverflow = document.body.style.overflow;
         document.body.style.overflow = 'hidden';
+        document.documentElement.style.overflow = 'hidden';
         
         // Immediate scroll to bottom
         const timer = setTimeout(() => {
@@ -200,6 +212,7 @@ export default function SupportChat() {
 
         return () => {
             document.body.style.overflow = originalOverflow;
+            document.documentElement.style.overflow = '';
             clearTimeout(timer);
         };
     }, [isOpen]);
@@ -271,6 +284,9 @@ export default function SupportChat() {
     // ── 8. Visibility logic ───────────────────────────────────────────────────
     // Still loading → render nothing so there's no flash
     if (loadingProfile) return null;
+
+    // Never show on admin/dashboard pages — they have their own support UI
+    if (pathname?.startsWith('/iamadmin') || pathname?.startsWith('/dashboard')) return null;
 
     // Admins / owners / staff → never show support chat
     if (userProfile && ADMIN_ROLES.includes(userProfile.role)) return null;

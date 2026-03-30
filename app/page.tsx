@@ -190,9 +190,9 @@ export default function LandingPage() {
                     </div>
 
                     <div className="hidden md:flex items-center gap-10 absolute left-1/2 -translate-x-1/2">
-                        <a className="text-slate-500 hover:text-slate-900 text-xs font-semibold tracking-tight transition-colors" href="#">Product</a>
-                        <a className="text-slate-500 hover:text-slate-900 text-xs font-semibold tracking-tight transition-colors" href="#">Pricing</a>
-                        <a className="text-slate-500 hover:text-slate-900 text-xs font-semibold tracking-tight transition-colors" href="#">Resources</a>
+                        <Link className="text-slate-500 hover:text-slate-900 text-xs font-semibold tracking-tight transition-colors" href="/about">About Us</Link>
+                        <Link className="text-slate-500 hover:text-slate-900 text-xs font-semibold tracking-tight transition-colors" href="/pricing">Pricing</Link>
+                        <Link className="text-slate-500 hover:text-slate-900 text-xs font-semibold tracking-tight transition-colors" href="/contact">Contact Us</Link>
                     </div>
 
                     <div className="flex items-center gap-3">
@@ -831,9 +831,9 @@ export default function LandingPage() {
                         <div>
                             <h5 className="font-black text-[10px] mb-6 uppercase tracking-[0.2em] text-slate-400">Company</h5>
                             <ul className="space-y-4 text-sm font-bold text-slate-500">
-                                <li><a className="hover:text-slate-900 transition-colors" href="#">About Us</a></li>
-                                <li><a className="hover:text-slate-900 transition-colors" href="#">Careers</a></li>
-                                <li><a className="hover:text-slate-900 transition-colors" href="#">Newsroom</a></li>
+                                <li><Link className="hover:text-slate-900 transition-colors" href="/about">About Us</Link></li>
+                                <li><Link className="hover:text-slate-900 transition-colors" href="/pricing">Pricing</Link></li>
+                                <li><Link className="hover:text-slate-900 transition-colors" href="/contact">Contact Us</Link></li>
                             </ul>
                         </div>
                         <div>
@@ -850,9 +850,9 @@ export default function LandingPage() {
                             © 2026 Recruit Flow Systems Inc.
                         </div>
                         <div className="flex gap-8 font-mono text-[10px] text-slate-400 uppercase tracking-widest">
-                            <a className="hover:text-slate-900 transition-colors" href="#">Privacy Policy</a>
-                            <a className="hover:text-slate-900 transition-colors" href="#">Terms of Service</a>
-                            <a className="hover:text-slate-900 transition-colors" href="#">Cookie Settings</a>
+                            <Link className="hover:text-slate-900 transition-colors" href="/privacy">Privacy Policy</Link>
+                            <Link className="hover:text-slate-900 transition-colors" href="/terms">Terms of Service</Link>
+                            <Link className="hover:text-slate-900 transition-colors" href="/contact">Contact</Link>
                         </div>
                     </div>
                 </div>
