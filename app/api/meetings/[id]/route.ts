@@ -2,6 +2,35 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { NextResponse } from 'next/server';
 import { getAuthenticatedUser, unauthorizedResponse, serverErrorResponse } from '@/lib/auth-guard';
 
+// PATCH - Update meeting status
+export async function PATCH(
+    req: Request,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        const auth = await getAuthenticatedUser();
+        if (!auth) return unauthorizedResponse();
+
+        const { id } = await params;
+        const { status } = await req.json();
+
+        if (!['pending', 'accepted', 'rejected'].includes(status)) {
+            return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
+        }
+
+        const { error } = await supabaseAdmin
+            .from('meetings')
+            .update({ status })
+            .eq('id', id);
+
+        if (error) return serverErrorResponse();
+
+        return NextResponse.json({ success: true });
+    } catch (error: any) {
+        return serverErrorResponse();
+    }
+}
+
 // DELETE a meeting — only if it belongs to the authenticated user
 export async function DELETE(
     req: Request,

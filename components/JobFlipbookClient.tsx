@@ -410,6 +410,8 @@ export default function JobFlipbookClient({ jobId }: { jobId: string }) {
     const [inviteMode, setInviteMode] = useState<'virtual' | 'on-site'>('virtual');
     const [inviteTime, setInviteTime] = useState('');
     const [inviteEndTime, setInviteEndTime] = useState('');
+    const [inviteDuration, setInviteDuration] = useState(30); // minutes per candidate
+    const [inviteGap, setInviteGap] = useState(10);           // gap between candidates in minutes
     const [inviteLink, setInviteLink] = useState('');
     const [inviteLocation, setInviteLocation] = useState('');
     const [savedSettings, setSavedSettings] = useState<any>(null);
@@ -588,11 +590,29 @@ export default function JobFlipbookClient({ jobId }: { jobId: string }) {
         setSendingMail(true);
         setMeetingConflict(null);
 
+        const isMulti = selectedEmails.length > 1;
+
+        // Build per-candidate slot times
+        // Single recipient: use inviteTime + (inviteTime + duration)
+        // Multiple recipients: stagger by (duration + gap) per slot
+        const getSlot = (index: number): { start: Date | null; end: Date | null } => {
+            if (!isInviteActive || !inviteTime) return { start: null, end: null };
+            const base = new Date(inviteTime).getTime();
+            const slotMs = (inviteDuration + inviteGap) * 60 * 1000;
+            const start = new Date(base + index * slotMs);
+            const end = new Date(start.getTime() + inviteDuration * 60 * 1000);
+            return { start, end };
+        };
+
         // If invite is active, create meetings for each candidate and check conflicts
-        if (isInviteActive && inviteTime && inviteEndTime) {
-            for (const email of selectedEmails) {
+        if (isInviteActive && inviteTime) {
+            for (let i = 0; i < selectedEmails.length; i++) {
+                const email = selectedEmails[i];
                 const applicant = applicants.find(a => a.email === email);
                 if (!applicant) continue;
+
+                const { start, end } = getSlot(i);
+                if (!start || !end) continue;
 
                 try {
                     const res = await fetch('/api/meetings', {
@@ -600,8 +620,8 @@ export default function JobFlipbookClient({ jobId }: { jobId: string }) {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             application_id: applicant.id,
-                            start_time: new Date(inviteTime).toISOString(),
-                            end_time: new Date(inviteEndTime).toISOString(),
+                            start_time: start.toISOString(),
+                            end_time: end.toISOString(),
                             mode: inviteMode,
                             title: `Interview: ${applicant.name}`,
                             notes: `Job: ${job?.title || 'N/A'}`
@@ -612,7 +632,7 @@ export default function JobFlipbookClient({ jobId }: { jobId: string }) {
                         const data = await res.json();
                         const conflict = data.conflicts?.[0];
                         setMeetingConflict(
-                            `Time conflict with "${conflict?.title}" (${new Date(conflict?.start_time).toLocaleString()} - ${new Date(conflict?.end_time).toLocaleString()}). Choose a different time.`
+                            `Time conflict for ${applicant.name}: "${conflict?.title}" (${new Date(conflict?.start_time).toLocaleString()} – ${new Date(conflict?.end_time).toLocaleString()}). Adjust start time or gap.`
                         );
                         setSendingMail(false);
                         return;
@@ -623,31 +643,34 @@ export default function JobFlipbookClient({ jobId }: { jobId: string }) {
             }
         }
 
+        const fmt = (d: Date | null) =>
+            d ? d.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'To be confirmed';
+
+        const currentLink = savedSettings?.meetLink || 'Pending';
+        const currentLocation = savedSettings?.location || job?.company_name || 'Office';
+
         // Dispatch personalized emails via API
         const dispatchPayload = {
             emails: selectedEmails,
             subject: mailSubject
                 .replace(/{{COMPANY}}/g, companyName || job?.company_name || 'Our Company')
                 .replace(/{{ROLE}}/g, job?.title || 'the position'),
-            bodies: selectedEmails.map(email => {
+            bodies: selectedEmails.map((email, i) => {
                 const applicant = applicants.find(a => a.email === email);
                 if (!applicant) return '';
 
-                const reasonsText = (applicant.reasons || []).join(', ') + 
+                const reasonsText = (applicant.reasons || []).join(', ') +
                     (applicant.custom_reason ? `. Note: ${applicant.custom_reason}` : '');
+
+                const { start, end } = getSlot(i);
+                const startFormatted = fmt(start);
+                const endFormatted = fmt(end);
 
                 let finalBody = mailBody
                     .replace(/{{NAME}}/g, applicant.name)
                     .replace(/{{REASONS}}/g, reasonsText || 'performance metrics')
                     .replace(/{{COMPANY}}/g, companyName || job?.company_name || 'Our Company')
-                    .replace(/{{ROLE}}/g, job?.title || 'the position');
-
-                const startFormatted = inviteTime ? new Date(inviteTime).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'To be confirmed';
-                const endFormatted = inviteEndTime ? new Date(inviteEndTime).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'To be confirmed';
-                const currentLink = savedSettings?.meetLink || 'Pending';
-                const currentLocation = savedSettings?.location || job?.company_name || 'Office';
-
-                finalBody = finalBody
+                    .replace(/{{ROLE}}/g, job?.title || 'the position')
                     .replace(/{{LINK}}/g, currentLink)
                     .replace(/{{LOCATION}}/g, currentLocation)
                     .replace(/{{START}}/g, startFormatted)
@@ -1239,31 +1262,94 @@ export default function JobFlipbookClient({ jobId }: { jobId: string }) {
                                                             <option value="on-site">On-Site</option>
                                                         </select>
                                                     </div>
-                                                    {/* Start + End Time */}
-                                                    <div className="grid grid-cols-2 gap-3">
-                                                        <div className="space-y-1.5">
-                                                            <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Start Time</label>
-                                                            <input
-                                                                type="datetime-local"
-                                                                value={inviteTime}
-                                                                onChange={(e) => setInviteTime(e.target.value)}
-                                                                className="w-full text-xs font-medium text-slate-700 bg-white border border-slate-200 rounded-sm px-3 py-2 outline-none focus:border-slate-400 transition-all"
-                                                            />
+
+                                                    {/* First candidate start time */}
+                                                    <div className="space-y-1.5">
+                                                        <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">
+                                                            {selectedEmails.length > 1 ? 'First Candidate Start Time' : 'Start Time'}
+                                                        </label>
+                                                        <input
+                                                            type="datetime-local"
+                                                            value={inviteTime}
+                                                            onChange={(e) => setInviteTime(e.target.value)}
+                                                            className="w-full text-xs font-medium text-slate-700 bg-white border border-slate-200 rounded-sm px-3 py-2 outline-none focus:border-slate-400 transition-all"
+                                                        />
+                                                    </div>
+
+                                                    {/* Duration + Gap — only shown for multiple recipients */}
+                                                    {selectedEmails.length > 1 ? (
+                                                        <div className="grid grid-cols-2 gap-3">
+                                                            <div className="space-y-1.5">
+                                                                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Duration (min)</label>
+                                                                <input
+                                                                    type="number"
+                                                                    min={5} max={180} step={5}
+                                                                    value={inviteDuration}
+                                                                    onChange={(e) => setInviteDuration(Number(e.target.value))}
+                                                                    className="w-full text-xs font-medium text-slate-700 bg-white border border-slate-200 rounded-sm px-3 py-2 outline-none focus:border-slate-400 transition-all"
+                                                                />
+                                                            </div>
+                                                            <div className="space-y-1.5">
+                                                                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Gap (min)</label>
+                                                                <input
+                                                                    type="number"
+                                                                    min={0} max={60} step={5}
+                                                                    value={inviteGap}
+                                                                    onChange={(e) => setInviteGap(Number(e.target.value))}
+                                                                    className="w-full text-xs font-medium text-slate-700 bg-white border border-slate-200 rounded-sm px-3 py-2 outline-none focus:border-slate-400 transition-all"
+                                                                />
+                                                            </div>
                                                         </div>
+                                                    ) : (
+                                                        /* Single recipient — show plain end time */
                                                         <div className="space-y-1.5">
                                                             <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">End Time</label>
                                                             <input
                                                                 type="datetime-local"
-                                                                value={inviteEndTime}
-                                                                onChange={(e) => setInviteEndTime(e.target.value)}
+                                                                value={inviteTime && inviteDuration
+                                                                    ? new Date(new Date(inviteTime).getTime() + inviteDuration * 60000).toISOString().slice(0, 16)
+                                                                    : ''}
+                                                                onChange={(e) => {
+                                                                    if (inviteTime && e.target.value) {
+                                                                        const diff = Math.round((new Date(e.target.value).getTime() - new Date(inviteTime).getTime()) / 60000);
+                                                                        if (diff > 0) setInviteDuration(diff);
+                                                                    }
+                                                                }}
                                                                 min={inviteTime}
                                                                 className="w-full text-xs font-medium text-slate-700 bg-white border border-slate-200 rounded-sm px-3 py-2 outline-none focus:border-slate-400 transition-all"
                                                             />
                                                         </div>
-                                                    </div>
+                                                    )}
+
+                                                    {/* Live schedule preview for multiple recipients */}
+                                                    {selectedEmails.length > 1 && inviteTime && (
+                                                        <div className="border-t border-slate-200 pt-3 space-y-1.5">
+                                                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Schedule Preview</p>
+                                                            {selectedEmails.map((email, i) => {
+                                                                const applicant = applicants.find(a => a.email === email);
+                                                                const base = new Date(inviteTime).getTime();
+                                                                const slotMs = (inviteDuration + inviteGap) * 60000;
+                                                                const start = new Date(base + i * slotMs);
+                                                                const end = new Date(start.getTime() + inviteDuration * 60000);
+                                                                const fmt = (d: Date) => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                                                return (
+                                                                    <div key={email} className="flex items-center justify-between text-[10px]">
+                                                                        <span className="font-bold text-slate-700 truncate max-w-[120px]">{applicant?.name || email}</span>
+                                                                        <span className="font-medium text-slate-400 shrink-0">{fmt(start)} – {fmt(end)}</span>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+
                                                     <div className="flex items-start gap-1.5 text-[10px] text-slate-400 leading-snug">
                                                         <Info className="size-3 shrink-0 mt-0.5" />
-                                                        <span>Using {inviteMode === 'virtual' ? 'Meet link' : 'office location'} saved in your Dashboard settings.</span>
+                                                        <span>
+                                                            {selectedEmails.length > 1
+                                                                ? `Each candidate gets a unique ${inviteDuration}-min slot with ${inviteGap}-min gap.`
+                                                                : `Using ${inviteMode === 'virtual' ? 'Meet link' : 'office location'} from Dashboard settings.`
+                                                            }
+                                                        </span>
                                                     </div>
                                                 </div>
                                             </motion.div>
@@ -1322,8 +1408,8 @@ export default function JobFlipbookClient({ jobId }: { jobId: string }) {
                         >
                             <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-white relative z-10 shrink-0">
                                 <div className="flex items-center gap-4">
-                                    <div className="size-12 bg-slate-900 rounded-xl flex items-center justify-center text-white shadow-xl shadow-slate-900/10">
-                                        <Sparkles className="size-6" />
+                                    <div className="size-12 bg-slate-900 rounded-xl flex items-center justify-center shadow-xl shadow-slate-900/10 overflow-hidden p-2">
+                                        <img src="/recruit-flow-logo.png" alt="Recruit Flow" className="w-full h-full object-contain invert" />
                                     </div>
                                     <div>
                                         <h2 className="text-xl font-bold tracking-tight text-slate-900 leading-none">Recruiter Intelligence</h2>
@@ -1347,7 +1433,7 @@ export default function JobFlipbookClient({ jobId }: { jobId: string }) {
                                 </div>
                             </div>
                             <div className="flex-1 overflow-hidden bg-white">
-                                <AIChatPanel jobId={jobId} applicants={applicants} />
+                                <AIChatPanel jobId={jobId} applicants={applicants} onCandidateNavigate={handleJumpToApplicant} onClose={() => setIsChatOpen(false)} />
                             </div>
                         </motion.div>
                     </div>

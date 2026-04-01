@@ -1162,6 +1162,17 @@ export default function DashboardClient() {
                         <div className="h-8 w-auto transition-transform group-hover:scale-105">
                             <img src="/recruit-flow-logo.png" alt="Recruit Flow" className="h-full w-auto object-contain" />
                         </div>
+                        {user?.tier && (
+                            <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-sm border ${
+                                user.tier === 'enterprise'
+                                    ? 'bg-violet-50 text-violet-600 border-violet-100'
+                                    : user.tier === 'pro'
+                                    ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                                    : 'bg-slate-50 text-slate-400 border-slate-100'
+                            }`}>
+                                {user.tier}
+                            </span>
+                        )}
                     </Link>
                 </div>
 

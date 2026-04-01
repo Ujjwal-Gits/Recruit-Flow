@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, Send, X, Image as ImageIcon } from 'lucide-react';
+import { MessageSquare, Send, X, Image as ImageIcon, ZoomIn, Copy, Check } from 'lucide-react';
 import BouncyLoader from '@/components/BouncyLoader';
 import { supabase } from '@/lib/supabase';
 import { usePathname } from 'next/navigation';
@@ -31,6 +31,8 @@ export default function SupportChat() {
     const channelRef = useRef<any>(null);
     const pollRef = useRef<any>(null);
     const [sending, setSending] = useState(false);
+    const [qrLightbox, setQrLightbox] = useState<{ url: string; reference: string } | null>(null);
+    const [copied, setCopied] = useState(false);
 
     // Close chat and release body lock when navigating to admin/dashboard pages
     useEffect(() => {
@@ -282,6 +284,17 @@ export default function SupportChat() {
     };
 
     // ── 8. Visibility logic ───────────────────────────────────────────────────
+    // Extract payment reference from message text (e.g. "remarks section, please write: RecruitXxx")
+    const extractReference = (text: string): string => {
+        const match = text.match(/(?:write|reference|ref)[:\s]+([A-Za-z0-9]+)/i);
+        return match?.[1] || '';
+    };
+
+    const handleCopyRef = (ref: string) => {
+        navigator.clipboard.writeText(ref);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
     // Still loading → render nothing so there's no flash
     if (loadingProfile) return null;
 
@@ -297,6 +310,60 @@ export default function SupportChat() {
     // ── 9. Render ─────────────────────────────────────────────────────────────
     return (
         <div className="fixed bottom-6 right-6 z-[9999] font-sans">
+            {/* QR Lightbox */}
+            <AnimatePresence>
+                {qrLightbox && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[10000] flex items-center justify-center p-6"
+                        onClick={() => setQrLightbox(null)}
+                    >
+                        <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
+                        <motion.div
+                            initial={{ scale: 0.9, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.9, y: 20 }}
+                            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                            onClick={e => e.stopPropagation()}
+                            className="relative bg-white rounded-lg shadow-2xl p-6 max-w-xs w-full text-center"
+                        >
+                            <button
+                                onClick={() => setQrLightbox(null)}
+                                className="absolute top-3 right-3 p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-50 rounded-full transition-all"
+                            >
+                                <X className="size-4" />
+                            </button>
+
+                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-4">Payment Gateway</p>
+
+                            <div className="rounded-lg overflow-hidden border border-slate-100 mb-5">
+                                <img src={qrLightbox.url} alt="Payment QR Code" className="w-full h-auto" />
+                            </div>
+
+                            {qrLightbox.reference && (
+                                <div className="bg-slate-50 border border-slate-100 rounded-sm px-4 py-3 mb-4">
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5">Remarks / Reference</p>
+                                    <div className="flex items-center justify-between gap-2">
+                                        <span className="text-sm font-black text-slate-900 tracking-wide">{qrLightbox.reference}</span>
+                                        <button
+                                            onClick={() => handleCopyRef(qrLightbox.reference)}
+                                            className="p-1.5 rounded text-slate-400 hover:text-slate-900 hover:bg-white border border-transparent hover:border-slate-200 transition-all shrink-0"
+                                        >
+                                            {copied ? <Check className="size-3.5 text-emerald-500" /> : <Copy className="size-3.5" />}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            <p className="text-[10px] text-slate-400 font-medium leading-relaxed">
+                                Scan the QR code to complete your payment. Include the reference in the remarks field.
+                            </p>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
             <AnimatePresence mode="wait">
                 {isOpen ? (
                     <motion.div
@@ -347,32 +414,43 @@ export default function SupportChat() {
                                     <p className="text-[9px] text-slate-300 font-medium mt-1">Send a message to get started</p>
                                 </div>
                             )}
-                            {messages.map(msg => (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 8 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    key={msg.id}
-                                    className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-                                >
-                                    <div className={`max-w-[85%] ${
-                                        msg.sender === 'user'
-                                            ? 'bg-slate-900 text-white rounded rounded-tr-none'
-                                            : 'bg-white border border-slate-200 text-slate-700 rounded rounded-tl-none'
-                                    } px-4 py-3 shadow-sm`}>
-                                        {msg.image_url && (
-                                            <div className="mb-3 rounded-lg overflow-hidden border border-white/10">
-                                                <img src={msg.image_url} alt="Attachment" className="w-full h-auto object-cover max-h-48" />
+                            {messages.map(msg => {
+                                const ref = msg.image_url ? extractReference(msg.text) : '';
+                                return (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 8 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        key={msg.id}
+                                        className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                                    >
+                                        <div className={`max-w-[85%] ${
+                                            msg.sender === 'user'
+                                                ? 'bg-slate-900 text-white rounded rounded-tr-none'
+                                                : 'bg-white border border-slate-200 text-slate-700 rounded rounded-tl-none'
+                                        } px-4 py-3 shadow-sm`}>
+                                            {msg.image_url && (
+                                                <button
+                                                    onClick={() => setQrLightbox({ url: msg.image_url!, reference: ref })}
+                                                    className="mb-3 rounded-lg overflow-hidden border border-slate-200 block w-full relative group"
+                                                >
+                                                    <img src={msg.image_url} alt="Payment QR" className="w-full h-auto object-cover max-h-48" />
+                                                    <div className="absolute inset-0 bg-slate-900/0 group-hover:bg-slate-900/10 transition-all flex items-center justify-center">
+                                                        <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded-full p-1.5 shadow-lg">
+                                                            <ZoomIn className="size-3.5 text-slate-700" />
+                                                        </div>
+                                                    </div>
+                                                </button>
+                                            )}
+                                            <p className="text-[12px] font-medium leading-relaxed">{msg.text}</p>
+                                            <div className={`flex items-center gap-2 mt-2 pt-1.5 border-t ${msg.sender === 'user' ? 'border-white/10' : 'border-slate-50'}`}>
+                                                <span className={`text-[8px] font-black uppercase tracking-widest ${msg.sender === 'user' ? 'text-white/30' : 'text-slate-300'}`}>
+                                                    {msg.time}
+                                                </span>
                                             </div>
-                                        )}
-                                        <p className="text-[12px] font-medium leading-relaxed">{msg.text}</p>
-                                        <div className={`flex items-center gap-2 mt-2 pt-1.5 border-t ${msg.sender === 'user' ? 'border-white/10' : 'border-slate-50'}`}>
-                                            <span className={`text-[8px] font-black uppercase tracking-widest ${msg.sender === 'user' ? 'text-white/30' : 'text-slate-300'}`}>
-                                                {msg.time}
-                                            </span>
                                         </div>
-                                    </div>
-                                </motion.div>
-                            ))}
+                                    </motion.div>
+                                );
+                            })}
                         </div>
 
                         {/* Input */}

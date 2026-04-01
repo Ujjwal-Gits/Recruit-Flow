@@ -1,33 +1,98 @@
-/**
- * AIChatPanel.tsx
- *
- * Provides AI-powered chat for recruiter-candidate analysis and feedback.
- * Security: Authenticated users only, role-based access for recruiters.
- * APIs used: Next.js API route /api/chat-recruiter for AI chat, Supabase for applicant data.
- */
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Send, Terminal, User, Sparkles, ShieldAlert, Cpu } from 'lucide-react';
+import { Send, ShieldCheck } from 'lucide-react';
 import BouncyLoader from '@/components/BouncyLoader';
 
+const MAX_HISTORY = 30;
+
 interface Message {
-    role: 'user' | 'assistant' | 'system_init';
+    role: 'user' | 'assistant';
     content: string;
+}
+
+interface Candidate {
+    id: string;
+    ref: string;
+    name: string;
+    score: number;
 }
 
 interface AIChatPanelProps {
     jobId: string;
     applicants: any[];
+    onCandidateNavigate?: (applicantId: string) => void;
+    onClose?: () => void;
 }
 
-export default function AIChatPanel({ jobId, applicants }: AIChatPanelProps) {
-    const [messages, setMessages] = useState<Message[]>([
-        { role: 'system_init', content: "INTELLIGENCE UPLINK ESTABLISHED. Ready to analyze applicant telemetry. Awaiting command." }
-    ]);
+// Parse AI reply — convert [CANDIDATE_LINK ref="..." name="..."] to inline text links
+function parseReply(
+    text: string,
+    candidates: Candidate[],
+    onCandidateClick: (id: string) => void
+): React.ReactNode[] {
+    const cleaned = text.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1');
+    const parts: React.ReactNode[] = [];
+    const regex = /\[CANDIDATE_LINK ref="([^"]+)" name="([^"]+)"\]/g;
+    let lastIndex = 0;
+    let match;
+
+    while ((match = regex.exec(cleaned)) !== null) {
+        if (match.index > lastIndex) parts.push(cleaned.slice(lastIndex, match.index));
+
+        const ref = match[1];
+        const name = match[2];
+        const candidate = candidates.find(c => c.ref === ref);
+
+        parts.push(
+            <button
+                key={`link-${match.index}`}
+                onClick={() => candidate && onCandidateClick(candidate.id)}
+                className="font-bold text-slate-900 underline underline-offset-2 decoration-slate-300 hover:decoration-slate-900 transition-all cursor-pointer"
+            >
+                {name}
+            </button>
+        );
+
+        lastIndex = regex.lastIndex;
+    }
+
+    if (lastIndex < cleaned.length) parts.push(cleaned.slice(lastIndex));
+    return parts;
+}
+
+const SUGGESTED_PROMPTS = [
+    'Who is the top candidate?',
+    'Compare the top 3 candidates',
+    'Who has the highest Match Fidelity?',
+    'Which candidates should I interview?',
+];
+
+export default function AIChatPanel({ jobId, applicants, onCandidateNavigate, onClose }: AIChatPanelProps) {
+    const storageKey = `rf_chat_${jobId}`;
+
+    const [messages, setMessages] = useState<Message[]>(() => {
+        // Load persisted history on mount
+        try {
+            const saved = localStorage.getItem(storageKey);
+            if (saved) return JSON.parse(saved) as Message[];
+        } catch { /* ignore */ }
+        return [];
+    });
+
+    const [candidates, setCandidates] = useState<Candidate[]>([]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
+
+    // Persist messages to localStorage whenever they change, capped at MAX_HISTORY
+    useEffect(() => {
+        try {
+            const trimmed = messages.slice(-MAX_HISTORY);
+            localStorage.setItem(storageKey, JSON.stringify(trimmed));
+        } catch { /* ignore */ }
+    }, [messages, storageKey]);
 
     useEffect(() => {
         if (scrollRef.current) {
@@ -35,13 +100,29 @@ export default function AIChatPanel({ jobId, applicants }: AIChatPanelProps) {
         }
     }, [messages, loading]);
 
-    const sendMessage = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!input.trim() || loading) return;
+    const handleCandidateClick = (candidateId: string) => {
+        // Close the chat first so the user can see the navigation result
+        onClose?.();
+        // Small delay so the close animation starts before navigation
+        setTimeout(() => {
+            if (onCandidateNavigate) {
+                onCandidateNavigate(candidateId);
+            } else {
+                const applicant = applicants.find(a => a.id === candidateId);
+                if (applicant?.resume_url) window.open(applicant.resume_url, '_blank');
+            }
+        }, 150);
+    };
 
-        const userMessage = input.trim();
+    const sendMessage = async (text?: string) => {
+        const userMessage = (text || input).trim();
+        if (!userMessage || loading) return;
+
         setInput('');
-        setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+        setError(null);
+
+        const newMessages: Message[] = [...messages, { role: 'user', content: userMessage }];
+        setMessages(newMessages);
         setLoading(true);
 
         try {
@@ -52,122 +133,166 @@ export default function AIChatPanel({ jobId, applicants }: AIChatPanelProps) {
                     jobId,
                     message: userMessage,
                     applicants: applicants.map(a => ({
+                        id: a.id,
                         name: a.name,
                         summary: a.ai_summary,
                         score: a.ats_score,
                     })),
-                    history: messages.slice(-5)
+                    history: newMessages.slice(-6),
                 }),
             });
 
             const data = await response.json();
+
+            if (response.status === 429) {
+                setError(data.error);
+                setMessages(messages); // roll back
+                setLoading(false);
+                return;
+            }
+
             if (data.error) throw new Error(data.error);
 
-            setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
-        } catch (error: any) {
-            setMessages(prev => [...prev, { role: 'assistant', content: `CRITICAL FAILURE: ${error.message}` }]);
+            if (data.candidates) setCandidates(data.candidates);
+
+            const updated: Message[] = [...newMessages, { role: 'assistant', content: data.reply }];
+            // Trim to MAX_HISTORY
+            setMessages(updated.slice(-MAX_HISTORY));
+        } catch (err: any) {
+            setError(err.message);
         } finally {
             setLoading(false);
         }
     };
 
+    const msgCount = messages.filter(m => m.role === 'user').length;
+    const hasMessages = messages.length > 0;
+
     return (
-        <div className="flex flex-col h-full bg-white font-sans rounded-none border-l border-slate-100">
-            {/* Arctic Header */}
-            <div className="flex items-center justify-between p-6 border-b border-slate-50">
-                <div className="flex items-center gap-4">
-                    <div className="size-10 bg-slate-900 rounded flex items-center justify-center text-white shadow-xl shadow-slate-900/10">
-                        <Sparkles className="size-4" />
-                    </div>
-                    <div>
-                        <h2 className="text-sm font-black text-slate-900 tracking-tight uppercase flex items-center gap-2">
-                            Intelligence <span className="text-slate-400 font-medium">Assistant</span>
-                        </h2>
-                        <div className="flex items-center gap-2 mt-1">
-                            <span className="relative flex h-1.5 w-1.5">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
-                            </span>
-                            <p className="text-[9px] text-slate-400 font-black uppercase tracking-[0.2em]">Context Uplink Active</p>
+        <div className="flex flex-col h-full bg-white">
+
+            {/* Messages / Welcome */}
+            <div ref={scrollRef} className="flex-1 overflow-y-auto">
+                {!hasMessages ? (
+                    <div className="flex flex-col items-center justify-center h-full px-8 py-12 text-center">
+                        <div className="mb-8">
+                            <img src="/recruit-flow-logo.png" alt="Recruit Flow" className="h-10 w-auto object-contain mx-auto mb-6 opacity-80" />
+                            <h2 className="text-xl font-black text-slate-900 tracking-tight mb-2">Recruit Flow Intelligence</h2>
+                            <p className="text-sm text-slate-400 font-medium max-w-xs mx-auto leading-relaxed">
+                                AI-powered candidate analysis for this job. Ask anything about your applicant pool.
+                            </p>
+                        </div>
+
+                        <div className="w-full max-w-sm space-y-2 mb-8">
+                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-300 mb-3">Suggested queries</p>
+                            {SUGGESTED_PROMPTS.map((prompt, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => sendMessage(prompt)}
+                                    className="w-full text-left px-4 py-3 bg-slate-50 border border-slate-100 rounded-sm text-xs font-medium text-slate-600 hover:bg-white hover:border-slate-300 hover:text-slate-900 transition-all"
+                                >
+                                    {prompt}
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="flex items-center gap-4 text-[9px] font-black uppercase tracking-widest text-slate-300">
+                            <div className="flex items-center gap-1.5">
+                                <span className="size-1.5 bg-emerald-400 rounded-full" />
+                                {applicants.length} candidates loaded
+                            </div>
+                            <div className="w-px h-3 bg-slate-100" />
+                            <div className="flex items-center gap-1.5">
+                                <ShieldCheck className="size-3" />
+                                Secure session
+                            </div>
+                            <div className="w-px h-3 bg-slate-100" />
+                            <span>30 msg / day · 30 msg history</span>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            {/* Content Canvas */}
-            <div 
-                ref={scrollRef} 
-                className="flex-1 overflow-y-auto p-6 space-y-8 bg-[#fdfdfb]/50"
-            >
-                {messages.map((msg, i) => (
-                    <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`flex gap-4 max-w-[90%] ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                            <div className={`size-8 rounded flex items-center justify-center flex-shrink-0 mt-1 border ${
-                                msg.role === 'assistant' || msg.role === 'system_init'
-                                ? 'bg-white border-slate-100 text-slate-900 shadow-sm' 
-                                : 'bg-slate-900 border-slate-900 text-white'
-                            }`}>
-                                {msg.role === 'assistant' || msg.role === 'system_init' ? <Sparkles className="size-3.5" /> : <User className="size-3.5" />}
-                            </div>
-                            <div className={`p-4 rounded text-[13px] leading-relaxed relative ${
-                                msg.role === 'assistant' || msg.role === 'system_init'
-                                ? 'bg-white border border-slate-100 text-slate-600 font-medium shadow-[0_2px_15px_-3px_rgba(0,0,0,0.04)]'
-                                : 'bg-slate-900 text-white font-bold shadow-xl shadow-slate-900/5'
-                            }`}>
-                                {msg.content}
-                                {(msg.role === 'assistant' || msg.role === 'system_init') && (
-                                    <div className="absolute -left-1.5 top-4 size-3 bg-white border-l border-b border-slate-100 rotate-45" />
+                ) : (
+                    <div className="p-6 space-y-6">
+                        {messages.map((msg, i) => (
+                            <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                {msg.role !== 'user' && (
+                                    <div className="size-7 rounded-sm bg-slate-900 flex items-center justify-center shrink-0 mt-0.5">
+                                        <img src="/recruit-flow-logo.png" alt="" className="size-4 object-contain invert" />
+                                    </div>
+                                )}
+                                <div className={`max-w-[80%] ${msg.role === 'user' ? 'order-first' : ''}`}>
+                                    {msg.role !== 'user' && (
+                                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-300 mb-1.5 ml-0.5">RF Intelligence</p>
+                                    )}
+                                    <div className={`px-4 py-3 rounded-sm text-[13px] leading-relaxed ${
+                                        msg.role === 'user'
+                                            ? 'bg-slate-900 text-white font-medium'
+                                            : 'bg-slate-50 border border-slate-100 text-slate-700 font-medium'
+                                    }`}>
+                                        {msg.role === 'assistant'
+                                            ? parseReply(msg.content, candidates, handleCandidateClick)
+                                            : msg.content
+                                        }
+                                    </div>
+                                </div>
+                                {msg.role === 'user' && (
+                                    <div className="size-7 rounded-sm bg-slate-100 flex items-center justify-center shrink-0 mt-0.5 text-[10px] font-black text-slate-500">
+                                        YOU
+                                    </div>
                                 )}
                             </div>
-                        </div>
-                    </div>
-                ))}
-                
-                {loading && (
-                    <div className="flex justify-start">
-                        <div className="flex gap-4 max-w-[85%]">
-                            <div className="size-8 rounded bg-white border border-slate-100 text-slate-400 flex items-center justify-center flex-shrink-0 mt-1 shadow-sm">
-                                <Sparkles className="size-3.5" />
+                        ))}
+
+                        {loading && (
+                            <div className="flex gap-3 justify-start">
+                                <div className="size-7 rounded-sm bg-slate-900 flex items-center justify-center shrink-0">
+                                    <img src="/recruit-flow-logo.png" alt="" className="size-4 object-contain invert" />
+                                </div>
+                                <div className="bg-slate-50 border border-slate-100 px-4 py-3 rounded-sm flex items-center gap-3">
+                                    <BouncyLoader size="sm" />
+                                    <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Analyzing...</span>
+                                </div>
                             </div>
-                            <div className="bg-white border border-slate-50 p-4 rounded flex items-center gap-3 shadow-sm">
-                                <BouncyLoader size="sm" />
-                                <span className="text-[9px] font-black text-slate-300 uppercase tracking-[0.3em]">Analyzing Archive...</span>
-                            </div>
-                        </div>
+                        )}
                     </div>
                 )}
             </div>
 
-            {/* Input Station */}
-            <form onSubmit={sendMessage} className="p-6 bg-white border-t border-slate-50">
-                <div className="relative flex items-center group">
+            {/* Error banner */}
+            {error && (
+                <div className="mx-6 mb-2 px-4 py-2.5 bg-red-50 border border-red-100 rounded-sm text-xs font-bold text-red-600 flex items-center justify-between">
+                    <span>{error}</span>
+                    <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600 ml-3 text-base leading-none">&times;</button>
+                </div>
+            )}
+
+            {/* Input */}
+            <div className="px-6 pb-6 pt-3 border-t border-slate-50 bg-white">
+                <form
+                    onSubmit={(e) => { e.preventDefault(); sendMessage(); }}
+                    className="flex items-center gap-2"
+                >
                     <input
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
-                        placeholder="Interrogate candidate data..."
-                        className="w-full bg-slate-50 border border-slate-100 rounded px-6 py-4 pr-16 focus:bg-white focus:border-slate-900 focus:ring-0 text-slate-900 text-sm outline-none transition-all placeholder:text-slate-300 font-bold"
+                        placeholder="Ask about your candidates..."
+                        className="flex-1 bg-slate-50 border border-slate-100 rounded-sm px-4 py-3 text-sm font-medium text-slate-900 outline-none focus:bg-white focus:border-slate-400 transition-all placeholder:text-slate-300"
                     />
                     <button
                         type="submit"
                         disabled={loading || !input.trim()}
-                        className="absolute right-2.5 bg-slate-900 text-white p-2.5 rounded-md flex items-center justify-center hover:bg-slate-800 active:scale-95 transition-all disabled:opacity-20 disabled:pointer-events-none shadow-lg shadow-slate-900/10"
+                        className="size-11 bg-slate-900 text-white rounded-sm flex items-center justify-center hover:bg-slate-800 active:scale-95 transition-all disabled:opacity-30 shrink-0"
                     >
                         <Send className="size-4" />
                     </button>
-                </div>
-                <div className="flex items-center justify-between mt-5 px-1">
-                    <div className="flex items-center gap-2">
-                        <div className="size-1 bg-emerald-500 rounded-full" />
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">
-                            Neural Match Active
-                        </p>
+                </form>
+                <div className="flex items-center justify-between mt-3 px-0.5">
+                    <div className="flex items-center gap-1.5">
+                        <span className="size-1.5 bg-emerald-400 rounded-full animate-pulse" />
+                        <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Neural Match Active</span>
                     </div>
-                    <div className="flex items-center gap-1.5 opacity-30">
-                        <ShieldAlert className="size-3 text-slate-900" />
-                        <span className="text-[8px] font-black text-slate-900 uppercase tracking-[1px]">Protected Session</span>
-                    </div>
+                    <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">{30 - msgCount} / 30 remaining</span>
                 </div>
-            </form>
+            </div>
         </div>
     );
 }
