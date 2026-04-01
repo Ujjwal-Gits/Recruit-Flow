@@ -901,7 +901,7 @@ export default function DashboardClient() {
 
                 const finalUser = { ...session.user, ...profileData, profile: profileData };
 
-                if (['owner', 'support', 'admin'].includes(profileData?.role)) {
+                if (['owner', 'manager', 'support', 'admin'].includes(profileData?.role)) {
                     router.push('/iamadmin');
                     return;
                 }

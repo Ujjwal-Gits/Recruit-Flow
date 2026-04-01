@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, CheckCircle, Users, Target, Zap, Globe, Shield, Heart, Instagram, Facebook, Linkedin, Github } from "lucide-react";
 import { useRef, useState, useEffect } from "react";
 import dynamic from "next/dynamic";
+import PublicNavbar from "@/components/PublicNavbar";
 const FounderCursor = dynamic(() => import("@/components/FounderCursor"), { ssr: false });
 
 
@@ -209,22 +210,7 @@ export default function AboutPage() {
     return (
         <div className="bg-white font-display text-slate-900 antialiased min-h-screen">
             {/* Navigation */}
-            <nav className="fixed top-0 left-0 right-0 z-50 h-16 bg-white/80 backdrop-blur-xl border-b border-slate-100 flex items-center justify-center">
-                <div className="w-full max-w-[1200px] px-6 md:px-8 flex items-center justify-between">
-                    <Link href="/" className="h-10 w-auto">
-                        <img src="/recruit-flow-logo.png" alt="Recruit Flow" className="h-full w-auto object-contain" />
-                    </Link>
-                    <div className="hidden md:flex items-center gap-10 absolute left-1/2 -translate-x-1/2">
-                        <Link className="text-slate-900 text-xs font-bold tracking-tight" href="/about">About Us</Link>
-                        <Link className="text-slate-500 hover:text-slate-900 text-xs font-semibold tracking-tight transition-colors" href="/pricing">Pricing</Link>
-                        <Link className="text-slate-500 hover:text-slate-900 text-xs font-semibold tracking-tight transition-colors" href="/contact">Contact Us</Link>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <Link href="/login" className="text-slate-900 text-xs font-bold tracking-tight px-4 py-2 hover:bg-slate-50 rounded transition-all">Log in</Link>
-                        <Link href="/register" className="bg-slate-900 text-white text-xs font-bold tracking-tight px-5 py-2.5 rounded hover:bg-slate-800 transition-all shadow-md active:scale-95">Sign Up</Link>
-                    </div>
-                </div>
-            </nav>
+            <PublicNavbar />
 
             {/* Hero */}
             <section className="relative overflow-hidden pt-32 pb-20 md:pt-40 md:pb-28">
@@ -480,7 +466,7 @@ export default function AboutPage() {
                                 {/* Image */}
                                 <img src="/Uzal-Hero.png" alt="Ujjwal Rupakheti" draggable={false} onDragStart={(e) => e.preventDefault()}
                                     className="relative w-full h-auto object-contain select-none transition-all duration-700 ease-in-out grayscale-[10%] group-hover:grayscale-0"
-                                    style={{ zIndex: 10, userSelect: 'none', WebkitUserDrag: 'none' as any, pointerEvents: 'none', display: 'block' }}
+                                    style={{ zIndex: 10, userSelect: 'none', pointerEvents: 'none', display: 'block' } as React.CSSProperties}
                                 />
 
                                 {/* BODY HOTSPOTS — auto-cycle + hover override */}

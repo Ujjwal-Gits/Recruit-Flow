@@ -1,15 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: false, // Prevents double-renders in dev
+  reactStrictMode: false,
   poweredByHeader: false,
   compress: true,
-  swcMinify: true,
+  outputFileTracingRoot: require("path").join(__dirname),
   compiler: {
-    removeConsole: process.env.NODE_ENV === 'production',
-  },
-  devIndicators: {
-    appIsrStatus: false,
-    buildActivity: false
+    removeConsole: process.env.NODE_ENV === "production",
   },
   webpack: (config) => {
     config.resolve.alias.canvas = false;
