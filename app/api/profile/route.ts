@@ -37,14 +37,19 @@ export async function POST(req: Request) {
 
         if (action === 'send-otp') {
             // ── Test account bypass — skip OTP for seed demo accounts ──
+            // Check both the submitted email AND the authenticated user's actual email
             const testEmails = [
                 process.env.ADMIN_EMAIL,
                 process.env.SUPPORT_EMAIL,
                 process.env.PRO_EMAIL,
                 process.env.FREE_EMAIL,
-            ].filter(Boolean).map(e => e!.toLowerCase());
+            ].filter(Boolean).map(e => e!.toLowerCase().trim());
 
-            if (testEmails.includes(email.toLowerCase())) {
+            const submittedEmail = email.toLowerCase().trim();
+            const authEmail = auth.user.email.toLowerCase().trim();
+            const isTestAccount = testEmails.includes(submittedEmail) || testEmails.includes(authEmail);
+
+            if (isTestAccount) {
                 // Return a fixed bypass code — no email sent
                 return NextResponse.json({ success: true, message: 'OTP sent to email.', testBypass: true, code: '000000' });
             }
@@ -80,9 +85,11 @@ export async function POST(req: Request) {
                 process.env.SUPPORT_EMAIL,
                 process.env.PRO_EMAIL,
                 process.env.FREE_EMAIL,
-            ].filter(Boolean).map(e => e!.toLowerCase());
+            ].filter(Boolean).map(e => e!.toLowerCase().trim());
 
-            const isTestAccount = testEmails.includes(email.toLowerCase());
+            const submittedEmail = email.toLowerCase().trim();
+            const authEmail = auth.user.email.toLowerCase().trim();
+            const isTestAccount = testEmails.includes(submittedEmail) || testEmails.includes(authEmail);
 
             if (!isTestAccount) {
                 // ── 2. Precise OTP Verification with Attempt Counting ──
