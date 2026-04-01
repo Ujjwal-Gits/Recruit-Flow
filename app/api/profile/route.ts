@@ -36,6 +36,19 @@ export async function POST(req: Request) {
         }
 
         if (action === 'send-otp') {
+            // ── Test account bypass — skip OTP for seed demo accounts ──
+            const testEmails = [
+                process.env.ADMIN_EMAIL,
+                process.env.SUPPORT_EMAIL,
+                process.env.PRO_EMAIL,
+                process.env.FREE_EMAIL,
+            ].filter(Boolean).map(e => e!.toLowerCase());
+
+            if (testEmails.includes(email.toLowerCase())) {
+                // Return a fixed bypass code — no email sent
+                return NextResponse.json({ success: true, message: 'OTP sent to email.', testBypass: true, code: '000000' });
+            }
+
             const { generateOTP } = await import('@/lib/auth-utils');
             const code = generateOTP();
             const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
@@ -61,43 +74,55 @@ export async function POST(req: Request) {
         }
 
         if (action === 'verify-and-save') {
-            // ── 2. Precise OTP Verification with Attempt Counting ──
-            const { data: codeRecord, error: fetchError } = await supabaseAdmin
-                .from('verification_codes')
-                .select('*')
-                .eq('email', email)
-                .is('used', false)
-                .single();
+            // ── Test account bypass — accept '000000' without DB lookup ──
+            const testEmails = [
+                process.env.ADMIN_EMAIL,
+                process.env.SUPPORT_EMAIL,
+                process.env.PRO_EMAIL,
+                process.env.FREE_EMAIL,
+            ].filter(Boolean).map(e => e!.toLowerCase());
 
-            if (fetchError || !codeRecord) {
-                return NextResponse.json({ error: 'No active verification session found.' }, { status: 404 });
-            }
+            const isTestAccount = testEmails.includes(email.toLowerCase());
 
-            // check expiry
-            if (new Date(codeRecord.expires_at) < new Date()) {
-                await supabaseAdmin.from('verification_codes').delete().eq('id', codeRecord.id);
-                return NextResponse.json({ error: 'Verification code has expired.' }, { status: 410 });
-            }
+            if (!isTestAccount) {
+                // ── 2. Precise OTP Verification with Attempt Counting ──
+                const { data: codeRecord, error: fetchError } = await supabaseAdmin
+                    .from('verification_codes')
+                    .select('*')
+                    .eq('email', email)
+                    .is('used', false)
+                    .single();
 
-            // verify code
-            if (codeRecord.code !== otp) {
-                const newAttempts = (codeRecord.attempts || 0) + 1;
-                
-                if (newAttempts >= 5) {
-                    await supabaseAdmin.from('verification_codes').delete().eq('id', codeRecord.id);
-                    return NextResponse.json({ error: 'Too many incorrect attempts. Code invalidated.' }, { status: 403 });
+                if (fetchError || !codeRecord) {
+                    return NextResponse.json({ error: 'No active verification session found.' }, { status: 404 });
                 }
 
-                await supabaseAdmin.from('verification_codes').update({ attempts: newAttempts }).eq('id', codeRecord.id);
-                return NextResponse.json({ error: `Invalid code. ${5 - newAttempts} attempts remaining.` }, { status: 401 });
-            }
+                // check expiry
+                if (new Date(codeRecord.expires_at) < new Date()) {
+                    await supabaseAdmin.from('verification_codes').delete().eq('id', codeRecord.id);
+                    return NextResponse.json({ error: 'Verification code has expired.' }, { status: 410 });
+                }
 
-            // Mark OTP as used
-            await supabaseAdmin.from('verification_codes').update({ used: true }).eq('id', codeRecord.id);
+                // verify code
+                if (codeRecord.code !== otp) {
+                    const newAttempts = (codeRecord.attempts || 0) + 1;
+
+                    if (newAttempts >= 5) {
+                        await supabaseAdmin.from('verification_codes').delete().eq('id', codeRecord.id);
+                        return NextResponse.json({ error: 'Too many incorrect attempts. Code invalidated.' }, { status: 403 });
+                    }
+
+                    await supabaseAdmin.from('verification_codes').update({ attempts: newAttempts }).eq('id', codeRecord.id);
+                    return NextResponse.json({ error: `Invalid code. ${5 - newAttempts} attempts remaining.` }, { status: 401 });
+                }
+
+                // Mark OTP as used
+                await supabaseAdmin.from('verification_codes').update({ used: true }).eq('id', codeRecord.id);
+            }
 
             // Update Auth if email changed
             const { data: existingProfile } = await supabaseAdmin.from('profiles').select('email').eq('id', userId).single();
-            
+
             if (existingProfile && existingProfile.email !== email) {
                 const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(userId, { email });
                 if (authError) return serverErrorResponse();

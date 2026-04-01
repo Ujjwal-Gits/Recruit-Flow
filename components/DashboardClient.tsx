@@ -379,6 +379,10 @@ const ProfileSection = memo(({ user }: { user: any }) => {
             if (!res.ok) throw new Error(data.error);
 
             setShowOTP(true);
+            // Auto-fill OTP for test/seed accounts
+            if (data.testBypass && data.code) {
+                setOtp(data.code);
+            }
             setMessage({ type: 'success', text: 'Terminal verification dispatched.' });
         } catch (err: any) {
             setMessage({ type: 'error', text: err.message });
@@ -844,6 +848,7 @@ export default function DashboardClient() {
     const [jobFilter, setJobFilter] = useState<'all' | 'active' | 'completed'>('all');
     const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
     const [systemAlert, setSystemAlert] = useState<{ title: string; message: string; type: 'error' | 'success' | 'warn' | 'upgrade' } | null>(null);
+    const [showProfileAlert, setShowProfileAlert] = useState(false);
 
     const isFree = user?.tier !== 'enterprise' && user?.tier !== 'pro';
 
@@ -907,6 +912,12 @@ export default function DashboardClient() {
                 }
 
                 setUser(finalUser);
+
+                // Show profile completion alert if company name or phone is missing
+                const isIncomplete = !profileData?.company_name?.trim() || !profileData?.phone_number?.trim();
+                if (isIncomplete) {
+                    setShowProfileAlert(true);
+                }
             } catch (err) {
                 console.error('Auth check fatal error:', err);
             } finally {
@@ -1097,6 +1108,50 @@ export default function DashboardClient() {
             <AnimatePresence>
                 {systemAlert && (
                     <SystemAlertModal alert={systemAlert} onClose={() => setSystemAlert(null)} />
+                )}
+            </AnimatePresence>
+
+            {/* Profile Completion Alert */}
+            <AnimatePresence>
+                {showProfileAlert && (
+                    <div className="fixed inset-0 z-[9998] flex items-center justify-center p-6">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+                            onClick={() => setShowProfileAlert(false)}
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                            className="relative bg-white rounded-sm border border-slate-100 shadow-2xl max-w-md w-full p-8 text-center"
+                        >
+                            <div className="size-14 bg-amber-50 border border-amber-100 rounded-sm flex items-center justify-center mx-auto mb-6">
+                                <AlertCircle className="size-6 text-amber-500" />
+                            </div>
+                            <h3 className="text-base font-black text-slate-900 mb-2 uppercase tracking-tight">Complete Your Company Profile</h3>
+                            <p className="text-sm text-slate-500 font-medium leading-relaxed mb-8">
+                                Please fill in your <span className="text-slate-900 font-bold">Company Name</span> and <span className="text-slate-900 font-bold">Contact Number</span> before posting jobs. This information is required for candidate communications.
+                            </p>
+                            <div className="flex items-center gap-3">
+                                <button
+                                    onClick={() => setShowProfileAlert(false)}
+                                    className="flex-1 py-3 border border-slate-200 text-slate-500 text-xs font-black uppercase tracking-widest rounded-sm hover:bg-slate-50 transition-all"
+                                >
+                                    Later
+                                </button>
+                                <button
+                                    onClick={() => { setShowProfileAlert(false); setActiveTab('profile'); }}
+                                    className="flex-1 py-3 bg-slate-900 text-white text-xs font-black uppercase tracking-widest rounded-sm hover:bg-slate-800 transition-all shadow-sm"
+                                >
+                                    Go to Settings
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
                 )}
             </AnimatePresence>
 
