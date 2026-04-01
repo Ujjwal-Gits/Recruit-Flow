@@ -849,12 +849,12 @@ export default function DashboardClient() {
 
     // Communication Settings State
     const [mailSettings, setMailSettings] = useState({
-        rejectionSubject: 'Update regarding your application',
-        rejectionBody: 'Dear {{NAME}},\n\nThank you for applying. Unfortunately, we will not be moving forward due to: {{REASONS}}.\n\nBest regards.',
-        virtualSubject: 'Invitation to Virtual Interview',
-        virtualBody: 'Dear {{NAME}},\n\nWe are impressed with your profile, particularly regarding {{REASONS}}. We would like to invite you for a virtual interview.\n\nMeeting Details:\nLink: {{LINK}}\nTime: {{START}} - {{END}}\n\nBest regards.',
-        onsiteSubject: 'Invitation to On-site Interview',
-        onsiteBody: 'Dear {{NAME}},\n\nWe are impressed with your profile, particularly regarding {{REASONS}}. We would like to invite you for an on-site interview.\n\nPlease visit our office at:\nLocation: {{LOCATION}}\nTime: {{START}} - {{END}}\n\nBest regards.',
+        rejectionSubject: 'Update regarding your application for {{ROLE}}',
+        rejectionBody: 'Dear {{NAME}},\n\nThank you for applying for the {{ROLE}} position at {{COMPANY}}. Unfortunately, we will not be moving forward due to: {{REASONS}}.\n\nBest regards,\n{{COMPANY}}',
+        virtualSubject: 'Invitation to Virtual Interview — {{ROLE}}',
+        virtualBody: 'Dear {{NAME}},\n\nWe are impressed with your profile, particularly regarding {{REASONS}}. We would like to invite you for a virtual interview for the {{ROLE}} role at {{COMPANY}}.\n\nMeeting Details:\nLink: {{LINK}}\nTime: {{START}} - {{END}}\n\nBest regards,\n{{COMPANY}}',
+        onsiteSubject: 'Invitation to On-site Interview — {{ROLE}}',
+        onsiteBody: 'Dear {{NAME}},\n\nWe are impressed with your profile, particularly regarding {{REASONS}}. We would like to invite you for an on-site interview for the {{ROLE}} role at {{COMPANY}}.\n\nPlease visit our office at:\nLocation: {{LOCATION}}\nTime: {{START}} - {{END}}\n\nBest regards,\n{{COMPANY}}',
         meetLink: '',
         location: ''
     });
@@ -1488,7 +1488,7 @@ export default function DashboardClient() {
                                             <Info className="size-5 text-emerald-600 mt-1" />
                                             <div className="text-xs font-medium text-emerald-900 leading-relaxed">
                                                 <p className="font-bold uppercase tracking-widest mb-2">Template Protocol Activated</p>
-                                                Use <code className="bg-emerald-100 px-1 py-0.5 rounded-sm font-black">{"{{NAME}}"}</code> for name, <code className="bg-emerald-100 px-1 py-0.5 rounded-sm font-black">{"{{REASONS}}"}</code> for decision points, <code className="bg-emerald-100 px-1 py-0.5 rounded-sm font-black">{"{{LINK}}"}</code> for Meet link, <code className="bg-emerald-100 px-1 py-0.5 rounded-sm font-black">{"{{LOCATION}}"}</code> for office address, and <code className="bg-emerald-100 px-1 py-0.5 rounded-sm font-black">{"{{START}}"}</code> / <code className="bg-emerald-100 px-1 py-0.5 rounded-sm font-black">{"{{END}}"}</code> for times.
+                                                Use <code className="bg-emerald-100 px-1 py-0.5 rounded-sm font-black">{"{{NAME}}"}</code> for candidate name, <code className="bg-emerald-100 px-1 py-0.5 rounded-sm font-black">{"{{COMPANY}}"}</code> for your company name, <code className="bg-emerald-100 px-1 py-0.5 rounded-sm font-black">{"{{ROLE}}"}</code> for the job title, <code className="bg-emerald-100 px-1 py-0.5 rounded-sm font-black">{"{{REASONS}}"}</code> for decision points, <code className="bg-emerald-100 px-1 py-0.5 rounded-sm font-black">{"{{LINK}}"}</code> for Meet link, <code className="bg-emerald-100 px-1 py-0.5 rounded-sm font-black">{"{{LOCATION}}"}</code> for office address, and <code className="bg-emerald-100 px-1 py-0.5 rounded-sm font-black">{"{{START}}"}</code> / <code className="bg-emerald-100 px-1 py-0.5 rounded-sm font-black">{"{{END}}"}</code> for times.
                                             </div>
                                         </div>
                                     </>
@@ -1519,6 +1519,8 @@ export default function DashboardClient() {
                                                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Body</label>
                                                         <div className="flex flex-wrap gap-1">
                                                             <button onClick={() => handleInsertToken(tpl.bodyName, '{{NAME}}')} className="text-[8px] bg-white border border-slate-100 px-1 py-0.5 rounded font-black text-slate-500 hover:text-slate-900 transition-colors uppercase tracking-wider shadow-sm">+ Name</button>
+                                                            <button onClick={() => handleInsertToken(tpl.bodyName, '{{COMPANY}}')} className="text-[8px] bg-white border border-slate-100 px-1 py-0.5 rounded font-black text-slate-500 hover:text-slate-900 transition-colors uppercase tracking-wider shadow-sm">+ Company</button>
+                                                            <button onClick={() => handleInsertToken(tpl.bodyName, '{{ROLE}}')} className="text-[8px] bg-white border border-slate-100 px-1 py-0.5 rounded font-black text-slate-500 hover:text-slate-900 transition-colors uppercase tracking-wider shadow-sm">+ Role</button>
                                                             <button onClick={() => handleInsertToken(tpl.bodyName, '{{REASONS}}')} className="text-[8px] bg-white border border-slate-100 px-1 py-0.5 rounded font-black text-slate-500 hover:text-slate-900 transition-colors uppercase tracking-wider shadow-sm">+ RSN</button>
                                                             {tpl.label !== 'Rejection' && (
                                                                 <>

@@ -414,6 +414,7 @@ export default function JobFlipbookClient({ jobId }: { jobId: string }) {
     const [inviteLocation, setInviteLocation] = useState('');
     const [savedSettings, setSavedSettings] = useState<any>(null);
     const [meetingConflict, setMeetingConflict] = useState<string | null>(null);
+    const [companyName, setCompanyName] = useState('');
 
     // Pre-warm PDF.js library so it's ready before the user flips
     useEffect(() => { prewarmPdfjs(); }, []);
@@ -435,6 +436,7 @@ export default function JobFlipbookClient({ jobId }: { jobId: string }) {
                     if (res.ok) {
                         const { profile } = await res.json();
                         currentTier = profile?.tier || 'free';
+                        if (profile?.company_name) setCompanyName(profile.company_name);
                     }
                 } catch (e) {
                     console.error('Tier fetch failed:', e);
@@ -476,19 +478,19 @@ export default function JobFlipbookClient({ jobId }: { jobId: string }) {
     useEffect(() => {
         if (selectedTemplate === 'virtual') {
             setMailSubject(savedSettings?.virtualSubject || 'Invitation to Virtual Interview');
-            setMailBody(savedSettings?.virtualBody || 'Dear {{NAME}},\n\nWe are impressed with your profile, particularly regarding {{REASONS}}. We would like to invite you for a virtual interview.\n\nMeeting Details:\nLink: {{LINK}}\nTime: {{START}} - {{END}}\n\nBest regards.');
+            setMailBody(savedSettings?.virtualBody || 'Dear {{NAME}},\n\nWe are impressed with your profile, particularly regarding {{REASONS}}. We would like to invite you for a virtual interview.\n\nMeeting Details:\nLink: {{LINK}}\nTime: {{START}} - {{END}}\n\nBest regards,\n{{COMPANY}}');
             setIsInviteActive(true);
             setInviteMode('virtual');
             setInviteLink(savedSettings?.meetLink || '');
         } else if (selectedTemplate === 'onsite') {
             setMailSubject(savedSettings?.onsiteSubject || 'Invitation to On-site Interview');
-            setMailBody(savedSettings?.onsiteBody || 'Dear {{NAME}},\n\nWe are impressed with your profile, particularly regarding {{REASONS}}. We would like to invite you for an on-site interview.\n\nPlease visit our office at:\nLocation: {{LOCATION}}\nTime: {{START}} - {{END}}\n\nBest regards.');
+            setMailBody(savedSettings?.onsiteBody || 'Dear {{NAME}},\n\nWe are impressed with your profile, particularly regarding {{REASONS}}. We would like to invite you for an on-site interview.\n\nPlease visit our office at:\nLocation: {{LOCATION}}\nTime: {{START}} - {{END}}\n\nBest regards,\n{{COMPANY}}');
             setIsInviteActive(true);
             setInviteMode('on-site');
             setInviteLocation(savedSettings?.location || '');
         } else if (selectedTemplate === 'rejection') {
-            setMailSubject(savedSettings?.rejectionSubject || 'Update regarding your application');
-            setMailBody(savedSettings?.rejectionBody || 'Dear {{NAME}},\n\nThank you for applying. Unfortunately, we will not be moving forward due to: {{REASONS}}.\n\nBest regards.');
+            setMailSubject(savedSettings?.rejectionSubject || 'Update regarding your application for {{ROLE}}');
+            setMailBody(savedSettings?.rejectionBody || 'Dear {{NAME}},\n\nThank you for applying for the {{ROLE}} position at {{COMPANY}}. Unfortunately, we will not be moving forward due to: {{REASONS}}.\n\nBest regards,\n{{COMPANY}}');
             setIsInviteActive(false);
         } else {
             setMailSubject('');
@@ -624,7 +626,9 @@ export default function JobFlipbookClient({ jobId }: { jobId: string }) {
         // Dispatch personalized emails via API
         const dispatchPayload = {
             emails: selectedEmails,
-            subject: mailSubject,
+            subject: mailSubject
+                .replace(/{{COMPANY}}/g, companyName || job?.company_name || 'Our Company')
+                .replace(/{{ROLE}}/g, job?.title || 'the position'),
             bodies: selectedEmails.map(email => {
                 const applicant = applicants.find(a => a.email === email);
                 if (!applicant) return '';
@@ -634,7 +638,9 @@ export default function JobFlipbookClient({ jobId }: { jobId: string }) {
 
                 let finalBody = mailBody
                     .replace(/{{NAME}}/g, applicant.name)
-                    .replace(/{{REASONS}}/g, reasonsText || 'performance metrics');
+                    .replace(/{{REASONS}}/g, reasonsText || 'performance metrics')
+                    .replace(/{{COMPANY}}/g, companyName || job?.company_name || 'Our Company')
+                    .replace(/{{ROLE}}/g, job?.title || 'the position');
 
                 const startFormatted = inviteTime ? new Date(inviteTime).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'To be confirmed';
                 const endFormatted = inviteEndTime ? new Date(inviteEndTime).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'To be confirmed';
@@ -1136,60 +1142,80 @@ export default function JobFlipbookClient({ jobId }: { jobId: string }) {
                                 </div>
 
                             {/* Template Line */}
-                            <div className="px-6 py-3 border-b border-slate-100 flex items-center justify-between">
-                                <span className="text-[10px] uppercase tracking-widest font-black text-slate-400">Template Use:</span>
-                                <div className="flex items-center gap-1.5">
-                                     {[
-                                         { id: 'custom', label: 'Blank' },
-                                         { id: 'virtual', label: 'Virtual' },
-                                         { id: 'onsite', label: 'On-Site' },
-                                         { id: 'rejection', label: 'Rejection' }
-                                     ].map(t => (
-                                         <button 
+                            <div className="px-6 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/40 shrink-0">
+                                <span className="text-[10px] uppercase tracking-widest font-black text-slate-400">Template:</span>
+                                <div className="flex items-center gap-1">
+                                    {[
+                                        { id: 'custom', label: 'Blank', color: '' },
+                                        { id: 'virtual', label: 'Virtual', color: 'emerald' },
+                                        { id: 'onsite', label: 'On-Site', color: 'indigo' },
+                                        { id: 'rejection', label: 'Rejection', color: 'red' }
+                                    ].map(t => (
+                                        <button
                                             key={t.id}
                                             onClick={() => setSelectedTemplate(t.id as any)}
-                                            className={`text-[10px] uppercase tracking-widest px-3 py-1.5 rounded font-black transition-colors ${selectedTemplate === t.id ? 'bg-slate-900 text-white' : 'bg-slate-50 border border-slate-100 text-slate-500 hover:bg-slate-100 border-transparent'}`}
-                                         >
-                                             {t.label}
-                                         </button>
-                                     ))}
+                                            className={`text-[9px] uppercase tracking-widest px-3 py-1.5 rounded-sm font-black transition-all ${selectedTemplate === t.id ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-400 hover:text-slate-700 hover:bg-white hover:border-slate-200 border border-transparent'}`}
+                                        >
+                                            {t.label}
+                                        </button>
+                                    ))}
                                 </div>
                             </div>
 
                             {/* Subject & Body */}
-                            <div className="flex-1 flex flex-col p-6 gap-3 bg-white min-h-0 overflow-y-auto custom-scrollbar">
-                                <input
-                                    type="text"
-                                    value={mailSubject}
-                                    onChange={(e) => setMailSubject(e.target.value)}
-                                    placeholder="Subject..."
-                                    className="w-full text-lg font-semibold text-slate-900 placeholder:text-slate-300 outline-none bg-transparent shrink-0"
-                                />
-                                
-                                <div className="flex items-center gap-3 border-b border-slate-50 pb-2 shrink-0">
-                                     <button onClick={() => handleInsertToken('{{NAME}}')} className="text-[10px] font-bold tracking-wider uppercase text-slate-400 hover:text-slate-800 transition-colors">Name</button>
-                                     <div className="w-px h-3 bg-slate-200" />
-                                     <button onClick={() => handleInsertToken('{{REASONS}}')} className="text-[10px] font-bold tracking-wider uppercase text-slate-400 hover:text-slate-800 transition-colors">Reasons</button>
+                            <div className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar">
+                                {/* Subject */}
+                                <div className="px-6 pt-5 pb-3 border-b border-slate-50 shrink-0">
+                                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-300 block mb-1.5">Subject</label>
+                                    <input
+                                        type="text"
+                                        value={mailSubject}
+                                        onChange={(e) => setMailSubject(e.target.value)}
+                                        placeholder="Email subject line..."
+                                        className="w-full text-sm font-semibold text-slate-900 placeholder:text-slate-300 outline-none bg-transparent"
+                                    />
                                 </div>
-                                
-                                <textarea
-                                    value={mailBody}
-                                    onChange={(e) => setMailBody(e.target.value)}
-                                    placeholder="Write your message..."
-                                    className="w-full flex-1 min-h-[150px] resize-none text-[13px] text-slate-700 placeholder:text-slate-300 outline-none leading-relaxed bg-transparent mt-2 custom-scrollbar"
-                                />
 
-                                {/* Minimal Logistics Toggle */}
-                                <div className="border-t border-slate-100 pt-4 mt-2 shrink-0">
-                                    <div className="flex items-center justify-between">
-                                        <label className="text-[11px] font-medium text-slate-500 flex items-center gap-1.5">
-                                            <Calendar className="size-3" /> Append Logistics
+                                {/* Token bar */}
+                                <div className="px-6 py-2 border-b border-slate-50 flex items-center gap-2 flex-wrap shrink-0 bg-slate-50/30">
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-300 mr-1">Insert:</span>
+                                    {[
+                                        { token: '{{NAME}}', label: 'Name' },
+                                        { token: '{{COMPANY}}', label: 'Company' },
+                                        { token: '{{ROLE}}', label: 'Role' },
+                                        { token: '{{REASONS}}', label: 'Reasons' },
+                                    ].map(({ token, label }) => (
+                                        <button
+                                            key={token}
+                                            onClick={() => handleInsertToken(token)}
+                                            className="text-[9px] font-black tracking-wider uppercase text-slate-400 hover:text-slate-900 bg-white border border-slate-100 hover:border-slate-300 px-2 py-1 rounded transition-all"
+                                        >
+                                            + {label}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* Body */}
+                                <div className="px-6 py-4 flex-1 flex flex-col">
+                                    <textarea
+                                        value={mailBody}
+                                        onChange={(e) => setMailBody(e.target.value)}
+                                        placeholder="Write your message here..."
+                                        className="w-full flex-1 min-h-[160px] resize-none text-[13px] text-slate-700 placeholder:text-slate-300 outline-none leading-relaxed bg-transparent custom-scrollbar"
+                                    />
+                                </div>
+
+                                {/* Append Logistics Toggle */}
+                                <div className="px-6 pb-5 border-t border-slate-100 pt-4 shrink-0">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <label className="text-[11px] font-bold text-slate-600 flex items-center gap-1.5 uppercase tracking-wider">
+                                            <Calendar className="size-3.5 text-slate-400" /> Append Logistics
                                         </label>
                                         <button
                                             onClick={() => setIsInviteActive(!isInviteActive)}
-                                            className={`w-8 h-4 rounded-full transition-colors relative ${isInviteActive ? 'bg-slate-900' : 'bg-slate-200'}`}
+                                            className={`w-9 h-5 rounded-full transition-colors relative shrink-0 ${isInviteActive ? 'bg-slate-900' : 'bg-slate-200'}`}
                                         >
-                                            <div className={`absolute top-0.5 bottom-0.5 bg-white rounded-full size-3 transition-all ${isInviteActive ? 'right-0.5' : 'left-0.5'}`} />
+                                            <div className={`absolute top-0.5 bottom-0.5 bg-white rounded-full size-4 transition-all shadow-sm ${isInviteActive ? 'right-0.5' : 'left-0.5'}`} />
                                         </button>
                                     </div>
                                     <AnimatePresence>
@@ -1198,32 +1224,46 @@ export default function JobFlipbookClient({ jobId }: { jobId: string }) {
                                                 initial={{ opacity: 0, height: 0 }}
                                                 animate={{ opacity: 1, height: 'auto' }}
                                                 exit={{ opacity: 0, height: 0 }}
-                                                className="overflow-hidden mt-3"
+                                                className="overflow-hidden"
                                             >
-                                                <div className="bg-slate-50 rounded p-3 border border-slate-100 grid grid-cols-2 gap-3">
-                                                    <div className="space-y-1">
-                                                        <label className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Protocol</label>
-                                                        <select 
+                                                <div className="bg-slate-50 rounded-sm border border-slate-100 p-4 space-y-3">
+                                                    {/* Protocol */}
+                                                    <div className="space-y-1.5">
+                                                        <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Protocol</label>
+                                                        <select
                                                             value={inviteMode}
-                                                            onChange={(e) => setInviteMode(e.target.value as 'virtual'|'on-site')}
-                                                            className="w-full text-[11px] font-medium text-slate-700 bg-white border border-slate-100 rounded px-2 py-1.5 outline-none focus:border-slate-400"
+                                                            onChange={(e) => setInviteMode(e.target.value as 'virtual' | 'on-site')}
+                                                            className="w-full text-xs font-medium text-slate-700 bg-white border border-slate-200 rounded-sm px-3 py-2 outline-none focus:border-slate-400 transition-all"
                                                         >
                                                             <option value="virtual">Virtual (Meet)</option>
                                                             <option value="on-site">On-Site</option>
                                                         </select>
                                                     </div>
-                                                    <div className="space-y-1">
-                                                        <label className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Start Time</label>
-                                                        <input
-                                                            type="datetime-local"
-                                                            value={inviteTime}
-                                                            onChange={(e) => setInviteTime(e.target.value)}
-                                                            className="w-full text-[11px] font-medium text-slate-700 bg-white border border-slate-100 rounded px-2 py-1.5 outline-none focus:border-slate-400"
-                                                        />
+                                                    {/* Start + End Time */}
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div className="space-y-1.5">
+                                                            <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Start Time</label>
+                                                            <input
+                                                                type="datetime-local"
+                                                                value={inviteTime}
+                                                                onChange={(e) => setInviteTime(e.target.value)}
+                                                                className="w-full text-xs font-medium text-slate-700 bg-white border border-slate-200 rounded-sm px-3 py-2 outline-none focus:border-slate-400 transition-all"
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-1.5">
+                                                            <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">End Time</label>
+                                                            <input
+                                                                type="datetime-local"
+                                                                value={inviteEndTime}
+                                                                onChange={(e) => setInviteEndTime(e.target.value)}
+                                                                min={inviteTime}
+                                                                className="w-full text-xs font-medium text-slate-700 bg-white border border-slate-200 rounded-sm px-3 py-2 outline-none focus:border-slate-400 transition-all"
+                                                            />
+                                                        </div>
                                                     </div>
-                                                    <div className="col-span-2 text-[10px] text-slate-500 flex items-start gap-1.5 leading-snug">
-                                                        <Info className="size-3 shrink-0" />
-                                                        <span>Using {inviteMode === 'virtual' ? 'Meet link' : 'Location'} from your Dashboard.</span>
+                                                    <div className="flex items-start gap-1.5 text-[10px] text-slate-400 leading-snug">
+                                                        <Info className="size-3 shrink-0 mt-0.5" />
+                                                        <span>Using {inviteMode === 'virtual' ? 'Meet link' : 'office location'} saved in your Dashboard settings.</span>
                                                     </div>
                                                 </div>
                                             </motion.div>
