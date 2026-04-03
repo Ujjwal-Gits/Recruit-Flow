@@ -26,7 +26,7 @@ export async function GET() {
             supabaseAdmin.from('profiles').select('*', { count: 'exact', head: true }),
             supabaseAdmin.from('jobs').select('*', { count: 'exact', head: true }),
             role === 'owner' 
-                ? supabaseAdmin.from('transactions').select('amount, created_at, currency')
+                ? supabaseAdmin.from('transactions').select('id, amount, created_at, currency, status, plan, purchaser, company, activated_by, duration')
                 : Promise.resolve({ data: null }),
             supabaseAdmin.from('support_messages')
                 .select('*')
@@ -48,12 +48,14 @@ export async function GET() {
         
         if (role === 'owner' && transResult.data) {
             const trans = transResult.data;
-            revenue = trans.reduce((sum: number, t: any) => sum + (t.currency !== 'NPR' ? Number(t.amount) : 0), 0);
-            nprTotal = trans.reduce((sum: number, t: any) => sum + (t.currency === 'NPR' ? Number(t.amount) : 0), 0);
-            transCount = trans.length;
+            // Only count non-cancelled transactions
+            const activeTrans = trans.filter((t: any) => t.status !== 'Cancelled');
+            revenue = activeTrans.reduce((sum: number, t: any) => sum + (t.currency !== 'NPR' ? Number(t.amount) : 0), 0);
+            nprTotal = activeTrans.reduce((sum: number, t: any) => sum + (t.currency === 'NPR' ? Number(t.amount) : 0), 0);
+            transCount = activeTrans.length;
 
             const historyObj: Record<string, { npr: number; usd: number; name: string }> = {};
-            trans.forEach((t: any) => {
+            activeTrans.forEach((t: any) => {
                 const date = new Date(t.created_at);
                 const month = date.toLocaleString('default', { month: 'short' });
                 const monthKey = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
@@ -166,7 +168,19 @@ export async function GET() {
             users: users || [],
             chats: activeSupportChats,
             closedChats: closedSupportChats,
-            upgrades: upgradeRequests
+            upgrades: upgradeRequests,
+            invoices: role === 'owner' ? (transResult.data || []).map((t: any) => ({
+                id: t.id,
+                plan: t.plan || 'Subscription',
+                purchaser: t.purchaser || '',
+                company: t.company || '—',
+                currency: t.currency || 'NPR',
+                amount: Number(t.amount) || 0,
+                status: t.status || 'Succeeded',
+                date: t.created_at,
+                activatedBy: t.activated_by || '',
+                duration: t.duration || 'Lifetime',
+            })) : [],
         });
 
     } catch (error: any) {
@@ -182,7 +196,7 @@ export async function POST(req: Request) {
             return forbiddenResponse();
         }
 
-        const { action, targetUserId, newTier, newRole, newExpiry } = await req.json();
+        const { action, targetUserId, newTier, newRole, newExpiry, invoice, invoiceId } = await req.json();
         const adminRole = auth.role;
 
         if (action === 'update-user') {
@@ -193,7 +207,6 @@ export async function POST(req: Request) {
             const updateData: any = {};
             if (newTier) updateData.tier = newTier;
             if (newRole) updateData.role = newRole;
-            // Handle null/undefined properly to allow clearing the expiry
             if (newExpiry !== undefined) updateData.subscription_expiry = newExpiry;
 
             const { error } = await supabaseAdmin
@@ -202,11 +215,37 @@ export async function POST(req: Request) {
                 .eq('id', targetUserId);
 
             if (error) return serverErrorResponse();
-            
-            // Invalidate the cache for this user so they get immediate access
             invalidateUserCache(targetUserId);
-            
             return NextResponse.json({ success: true, message: 'User updated successfully.' });
+        }
+
+        if (action === 'create-invoice' && invoice) {
+            // Try full insert first; fall back to minimal if columns don't exist
+            const { error } = await supabaseAdmin.from('transactions').insert({
+                id: invoice.id,
+                amount: invoice.amount,
+                currency: invoice.currency,
+                status: invoice.status,
+                plan: invoice.plan,
+                purchaser: invoice.purchaser,
+                company: invoice.company,
+                activated_by: invoice.activatedBy,
+                duration: invoice.duration,
+                created_at: invoice.date,
+            });
+            if (error) {
+                // Fallback: only insert columns that definitely exist
+                await supabaseAdmin.from('transactions').insert({
+                    amount: invoice.amount,
+                    currency: invoice.currency,
+                });
+            }
+            return NextResponse.json({ success: true });
+        }
+
+        if (action === 'cancel-invoice' && invoiceId) {
+            await supabaseAdmin.from('transactions').update({ status: 'Cancelled' }).eq('id', invoiceId);
+            return NextResponse.json({ success: true });
         }
 
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });

@@ -541,6 +541,7 @@ export default function AdminDashboardClient() {
                 setSupportChats(data.chats || []);
                 setUpgradeRequests(data.upgrades || []);
                 setRevenueData(data.stats?.revenueHistory || []);
+                if (data.invoices?.length) setInvoices(data.invoices);
                 
                 // If not owner, change default tab to users since overview is restricted
                 if (data.role !== 'owner') {
@@ -661,6 +662,12 @@ export default function AdminDashboardClient() {
                     };
                     setInvoices(prev => [newInvoice, ...prev]);
                     logAction('Tier Upgrade', `${targetUser?.email || targetId} → ${priceInfo.label} (${updates.duration ? updates.duration + ' days' : 'Lifetime'})`);
+                    // Persist to DB
+                    fetch('/api/iamadmin', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'create-invoice', invoice: newInvoice }),
+                    }).catch(console.error);
                 } else if (updates.newTier) {
                     const targetUser = allUsers.find(u => u.id === targetId);
                     logAction('Tier Change', `${targetUser?.email || targetId} → ${updates.newTier}`);
@@ -1019,11 +1026,15 @@ export default function AdminDashboardClient() {
                                                         <LineChart data={filteredRevenueData}>
                                                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                                                             <XAxis 
-                                                                dataKey="name" 
+                                                                dataKey="month" 
                                                                 axisLine={false} 
                                                                 tickLine={false} 
                                                                 tick={{fontSize: 10, fontWeight: 700, fill: '#64748b'}} 
                                                                 dy={10}
+                                                                tickFormatter={(v) => {
+                                                                    const [y, m] = v.split('-');
+                                                                    return new Date(+y, +m - 1).toLocaleString('default', { month: 'short' });
+                                                                }}
                                                             />
                                                             <YAxis 
                                                                 yAxisId="left"
@@ -2024,7 +2035,10 @@ export default function AdminDashboardClient() {
                                                                         <ExternalLink className="size-3.5" />
                                                                     </button>
                                                                     <button
-                                                                        onClick={() => setInvoices(prev => prev.map(i => i.id === inv.id ? { ...i, status: 'Cancelled' } : i))}
+                                                                        onClick={() => {
+                                                                            setInvoices(prev => prev.map(i => i.id === inv.id ? { ...i, status: 'Cancelled' } : i));
+                                                                            fetch('/api/iamadmin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'cancel-invoice', invoiceId: inv.id }) }).catch(console.error);
+                                                                        }}
                                                                         className="p-1.5 text-slate-200 hover:text-red-500 border border-transparent hover:border-red-100 hover:bg-red-50 rounded transition-all"
                                                                         title="Cancel invoice"
                                                                     >
@@ -2424,6 +2438,7 @@ export default function AdminDashboardClient() {
                             <button
                                 onClick={() => {
                                     setInvoices(prev => prev.map(i => i.id === selectedInvoice.id ? { ...i, status: 'Cancelled' } : i));
+                                    fetch('/api/iamadmin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'cancel-invoice', invoiceId: selectedInvoice.id }) }).catch(console.error);
                                     setSelectedInvoice(null);
                                 }}
                                 className="px-4 py-2.5 text-red-500 rounded text-xs font-black uppercase tracking-widest border border-red-100 hover:bg-red-50 transition-all"
