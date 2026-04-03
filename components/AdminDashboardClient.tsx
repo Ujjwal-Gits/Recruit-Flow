@@ -73,7 +73,7 @@ export default function AdminDashboardClient() {
     const [showNotifications, setShowNotifications] = useState(false);
     const [showDateSelector, setShowDateSelector] = useState(false);
     const [chartStartDate, setChartStartDate] = useState('2026-01-01');
-    const [chartEndDate, setChartEndDate] = useState('2026-07-31');
+    const [chartEndDate, setChartEndDate] = useState('2026-12-31');
 
     // Invoice States
     const [invoiceFilter, setInvoiceFilter] = useState<'ALL' | 'NPR' | 'OTHER'>('ALL');
@@ -118,6 +118,20 @@ export default function AdminDashboardClient() {
     const [revenueData, setRevenueData] = useState<any[]>([]);
     const [invoices, setInvoices] = useState<any[]>([]);
 
+    // ── Live Action Log ──────────────────────────────────────────────────────
+    const [actionLog, setActionLog] = useState<{ id: number; action: string; target: string; author: string; role: string; time: string; ts: number }[]>([]);
+    const logAction = (action: string, target: string) => {
+        setActionLog(prev => [{
+            id: Date.now(),
+            action,
+            target,
+            author: user?.email || 'Admin',
+            role: user?.role || 'admin',
+            time: new Date().toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }),
+            ts: Date.now(),
+        }, ...prev].slice(0, 100)); // keep last 100
+    };
+
     // Activation Hub Menu States
     const [showActivationMenu, setShowActivationMenu] = useState(false);
     const [selectedActivationTier, setSelectedActivationTier] = useState<'pro' | 'enterprise' | null>(null);
@@ -161,7 +175,7 @@ export default function AdminDashboardClient() {
                 executeCloseTicket(confirmModal.userId);
             } else if (confirmModal.type === 'UPGRADE' && confirmModal.userId && confirmModal.tier) {
                 const expiryDate = confirmModal.duration ? new Date(Date.now() + confirmModal.duration * 24 * 60 * 60 * 1000).toISOString() : null;
-                updateUserAccount(confirmModal.userId, { newTier: confirmModal.tier, newExpiry: expiryDate });
+                updateUserAccount(confirmModal.userId, { newTier: confirmModal.tier, newExpiry: expiryDate, duration: confirmModal.duration });
                 if (confirmModal.type === 'UPGRADE') {
                     setUpgradeRequests(prev => prev.map(r => r.user === confirmModal.email ? { ...r, status: 'approved' } : r));
                 }
@@ -202,7 +216,7 @@ export default function AdminDashboardClient() {
         const chat = supportChats.find(c => c.id === chatId);
         if (chat) setClosedChats(prev => [{ ...chat, isClosed: true }, ...prev]);
         setSelectedChatId(null);
-        
+        logAction('Support Ticket Closed', `Ticket #${chatId.slice(0, 8)} archived`);
         try {
             await fetch('/api/support/admin/chats', {
                 method: 'PATCH',
@@ -222,7 +236,7 @@ export default function AdminDashboardClient() {
         if (chat) setSupportChats(prev => [{ ...chat, isClosed: false }, ...prev]);
         setSupportTicketTab('active');
         setSelectedChatId(chatId);
-
+        logAction('Support Ticket Reopened', `Ticket #${chatId.slice(0, 8)} reactivated`);
         try {
             await fetch('/api/support/admin/chats', {
                 method: 'PATCH',
@@ -239,12 +253,12 @@ export default function AdminDashboardClient() {
         // Optimistic UI
         setUpgradeRequests(prev => prev.filter(r => r.id !== userId));
         setSelectedUpgradeId(null);
-
+        const req = upgradeRequests.find(r => r.id === userId);
+        logAction('Activation Resolved', `Request from ${req?.user || userId} closed`);
         try {
             await fetch('/api/support/admin/chats', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                // Custom action for activation resolution
                 body: JSON.stringify({ userId, action: 'RESOLVE_ACTIVATION' })
             });
             fetchUpgrades();
@@ -334,8 +348,30 @@ export default function AdminDashboardClient() {
     const filteredRevenueData = useMemo(() => {
         const startMonth = chartStartDate.slice(0, 7);
         const endMonth = chartEndDate.slice(0, 7);
-        return revenueData.filter(d => d.month >= startMonth && d.month <= endMonth);
-    }, [chartStartDate, chartEndDate, revenueData]);
+
+        // Build chart data from local invoices (only non-cancelled)
+        const monthMap: Record<string, { month: string; usd: number; npr: number }> = {};
+        invoices
+            .filter(i => i.status !== 'Cancelled' && i.date)
+            .forEach(i => {
+                const month = i.date.slice(0, 7); // 'YYYY-MM'
+                if (month < startMonth || month > endMonth) return;
+                if (!monthMap[month]) monthMap[month] = { month, usd: 0, npr: 0 };
+                if (i.currency === 'NPR') monthMap[month].npr += i.amount || 0;
+                else monthMap[month].usd += i.amount || 0;
+            });
+
+        // Also include any API revenue history
+        revenueData
+            .filter(d => d.month >= startMonth && d.month <= endMonth)
+            .forEach(d => {
+                if (!monthMap[d.month]) monthMap[d.month] = { month: d.month, usd: 0, npr: 0 };
+                monthMap[d.month].usd += d.usd || 0;
+                monthMap[d.month].npr += d.npr || 0;
+            });
+
+        return Object.values(monthMap).sort((a, b) => a.month.localeCompare(b.month));
+    }, [chartStartDate, chartEndDate, revenueData, invoices]);
     const [openSubMenu, setOpenSubMenu] = useState<{ id: string; type: 'pro' | 'enterprise' } | null>(null);
     
     const filteredInvoices = useMemo(() => {
@@ -602,6 +638,36 @@ export default function AdminDashboardClient() {
             const data = await res.json();
             if (data.success) {
                 fetchAdminData();
+
+                // Auto-generate invoice when a tier upgrade is performed
+                if (updates.newTier && (updates.newTier === 'pro' || updates.newTier === 'enterprise')) {
+                    const targetUser = allUsers.find(u => u.id === targetId);
+                    const tierPrices: Record<string, { npr: number; usd: number; label: string }> = {
+                        pro: { npr: 499, usd: 6.99, label: 'Arctic Pro' },
+                        enterprise: { npr: 799, usd: 9.99, label: 'Enterprise' },
+                    };
+                    const priceInfo = tierPrices[updates.newTier];
+                    const newInvoice = {
+                        id: `INV-${Date.now().toString(36).toUpperCase()}`,
+                        plan: priceInfo.label,
+                        purchaser: targetUser?.email || targetId,
+                        company: targetUser?.company_name || '—',
+                        currency: 'NPR',
+                        amount: priceInfo.npr,
+                        status: 'Succeeded',
+                        date: new Date().toISOString(),
+                        activatedBy: user?.email || 'Admin',
+                        duration: updates.duration ? `${updates.duration} days` : 'Lifetime',
+                    };
+                    setInvoices(prev => [newInvoice, ...prev]);
+                    logAction('Tier Upgrade', `${targetUser?.email || targetId} → ${priceInfo.label} (${updates.duration ? updates.duration + ' days' : 'Lifetime'})`);
+                } else if (updates.newTier) {
+                    const targetUser = allUsers.find(u => u.id === targetId);
+                    logAction('Tier Change', `${targetUser?.email || targetId} → ${updates.newTier}`);
+                } else if (updates.newRole) {
+                    const targetUser = allUsers.find(u => u.id === targetId);
+                    logAction('Role Updated', `${targetUser?.email || targetId} → ${updates.newRole}`);
+                }
             }
         } catch (err) {
             console.error('Update Error:', err);
@@ -619,6 +685,7 @@ export default function AdminDashboardClient() {
             const targetUser = allUsers.find(u => u.email === newStaffEmail);
             if (targetUser) {
                 await updateUserAccount(targetUser.id, { newRole: newStaffRole });
+                logAction('Staff Added', `${newStaffEmail} promoted to ${newStaffRole}`);
                 setShowStaffModal(false);
                 setNewStaffEmail('');
             } else {
@@ -816,7 +883,7 @@ export default function AdminDashboardClient() {
                                                             <button onClick={() => setShowNotifications(false)} className="text-slate-400 hover:text-slate-600"><X className="size-3" /></button>
                                                         </div>
                                                         <div className="max-h-60 overflow-y-auto">
-                                                            {mockHistory.slice(0, 3).map((log, i) => (
+                                                            {actionLog.slice(0, 3).map((log, i) => (
                                                                 <div key={i} className="p-3 border-b border-slate-50 hover:bg-slate-50 cursor-pointer">
                                                                     <p className="text-xs font-bold text-slate-900">{log.action}</p>
                                                                     <p className="text-[10px] font-medium text-slate-500 mt-0.5">{log.target}</p>
@@ -858,9 +925,12 @@ export default function AdminDashboardClient() {
                                                     <CreditCard className="size-4 text-emerald-600" />
                                                 </div>
                                             </div>
-                                            <div className="flex items-end gap-3">
+                                            <div className="flex items-ends gap-3">
                                                 <h3 className="text-3xl font-bold text-slate-900 tracking-tight">
-                                                    NPR {Number(stats?.nprTotal || 0).toLocaleString()}
+                                                    NPR {invoices
+                                                        .filter(i => i.status !== 'Cancelled' && i.currency === 'NPR')
+                                                        .reduce((sum, i) => sum + (i.amount || 0), 0)
+                                                        .toLocaleString()}
                                                 </h3>
                                             </div>
                                         </div>
@@ -876,7 +946,12 @@ export default function AdminDashboardClient() {
                                                 {stats?.revenue === 'RESTRICTED' ? (
                                                      <h3 className="text-3xl font-bold text-slate-200 tracking-tight leading-none">***</h3>
                                                 ) : (
-                                                     <h3 className="text-3xl font-bold text-slate-900 tracking-tight leading-none">${stats?.revenue || 0}</h3>
+                                                     <h3 className="text-3xl font-bold text-slate-900 tracking-tight leading-none">
+                                                         ${invoices
+                                                             .filter(i => i.status !== 'Cancelled' && i.currency === 'USD')
+                                                             .reduce((sum, i) => sum + (i.amount || 0), 0)
+                                                             .toFixed(2)}
+                                                     </h3>
                                                 )}
                                             </div>
                                         </div>
@@ -1281,47 +1356,71 @@ export default function AdminDashboardClient() {
                                     exit={{ opacity: 0, y: -10 }}
                                     className="space-y-5"
                                 >
-                                    <div>
+                                    <div className="flex items-center justify-between">
                                         <div>
-                                            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">System History</h1>
-                                            <p className="text-sm text-slate-500 mt-1 max-w-xl">Overview of administrative actions.</p>
+                                            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Action History</h1>
+                                            <p className="text-sm text-slate-500 mt-1 max-w-xl">Live audit log of all administrative actions in this session.</p>
                                         </div>
+                                        {actionLog.length > 0 && (
+                                            <button
+                                                onClick={() => setActionLog([])}
+                                                className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-red-500 transition-colors px-3 py-2 border border-slate-100 rounded-sm hover:border-red-100 hover:bg-red-50"
+                                            >
+                                                Clear Log
+                                            </button>
+                                        )}
                                     </div>
 
                                     <div className="bg-white border border-slate-100 rounded-md shadow-sm overflow-hidden">
-                                        <table className="w-full text-left">
-                                            <thead className="bg-[#fafafa] border-b border-slate-100">
-                                                <tr>
-                                                    <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Timestamp</th>
-                                                    <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Operation</th>
-                                                    <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Parameters</th>
-                                                    <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Initiator</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-slate-50">
-                                                {mockHistory.map(log => (
-                                                    <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
-                                                        <td className="px-6 py-4">
-                                                            <span className="text-xs font-semibold text-slate-500 whitespace-nowrap">{log.time || 'N/A'}</span>
-                                                        </td>
-                                                        <td className="px-6 py-4">
-                                                            <span className="text-[11px] font-bold text-slate-900 px-3 py-1 bg-white border border-slate-100 rounded-lg shadow-sm whitespace-nowrap">{log.action}</span>
-                                                        </td>
-                                                        <td className="px-6 py-4">
-                                                            <p className="text-sm font-medium text-slate-600 leading-normal">{log.target}</p>
-                                                        </td>
-                                                        <td className="px-6 py-4">
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="size-8 rounded-lg bg-slate-900 flex items-center justify-center text-xs font-bold text-white shadow-sm">
-                                                                    {log.author?.charAt(0) || 'U'}
-                                                                </div>
-                                                                <span className="text-sm font-bold text-slate-900">{log.author || 'System'}</span>
-                                                            </div>
-                                                        </td>
+                                        {actionLog.length === 0 ? (
+                                            <div className="py-20 text-center">
+                                                <div className="size-12 bg-slate-50 rounded-sm flex items-center justify-center mx-auto mb-4">
+                                                    <History className="size-5 text-slate-200" />
+                                                </div>
+                                                <p className="text-sm font-bold text-slate-400">No actions recorded yet</p>
+                                                <p className="text-xs text-slate-300 font-medium mt-1">Actions will appear here as you use the admin panel</p>
+                                            </div>
+                                        ) : (
+                                            <table className="w-full text-left">
+                                                <thead className="bg-[#fafafa] border-b border-slate-100">
+                                                    <tr>
+                                                        <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Timestamp</th>
+                                                        <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Operation</th>
+                                                        <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Details</th>
+                                                        <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Initiator</th>
                                                     </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-50">
+                                                    {actionLog.map(log => (
+                                                        <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
+                                                            <td className="px-6 py-4">
+                                                                <span className="text-xs font-semibold text-slate-500 whitespace-nowrap">{log.time}</span>
+                                                            </td>
+                                                            <td className="px-6 py-4">
+                                                                <span className="text-[11px] font-bold text-slate-900 px-3 py-1 bg-white border border-slate-100 rounded-lg shadow-sm whitespace-nowrap">{log.action}</span>
+                                                            </td>
+                                                            <td className="px-6 py-4">
+                                                                <p className="text-sm font-medium text-slate-600 leading-normal">{log.target}</p>
+                                                            </td>
+                                                            <td className="px-6 py-4">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="size-8 rounded-lg bg-slate-900 flex items-center justify-center text-xs font-bold text-white shadow-sm shrink-0">
+                                                                        {log.author?.charAt(0)?.toUpperCase() || 'A'}
+                                                                    </div>
+                                                                    <div>
+                                                                        <p className="text-sm font-bold text-slate-900 leading-none">{log.author}</p>
+                                                                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mt-0.5">{log.role}</p>
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        )}
+                                        <div className="px-6 py-3 border-t border-slate-100 bg-slate-50/50 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                            {actionLog.length} action{actionLog.length !== 1 ? 's' : ''} logged this session
+                                        </div>
                                     </div>
                                 </motion.div>
                             )}
@@ -1898,7 +1997,7 @@ export default function AdminDashboardClient() {
                                                         {filteredInvoices.map((inv) => (
                                                             <div key={inv.id} className="flex flex-col sm:flex-row sm:items-center justify-between py-3 hover:bg-slate-50/50 -mx-4 px-4 transition-colors group">
                                                                 <div className="flex items-center gap-4">
-                                                                    <div className={`size-8 rounded flex items-center justify-center border font-black text-[10px] ${inv.status === 'Succeeded' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-amber-50 border-amber-100 text-amber-600'}`}>
+                                                                    <div className={`size-8 rounded flex items-center justify-center border font-black text-[10px] ${inv.status === 'Succeeded' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : inv.status === 'Cancelled' ? 'bg-red-50 border-red-100 text-red-400 line-through' : 'bg-amber-50 border-amber-100 text-amber-600'}`}>
                                                                         {inv.currency === 'USD' ? '$' : 'Rs.'}
                                                                     </div>
                                                                     <div>
@@ -1907,18 +2006,29 @@ export default function AdminDashboardClient() {
                                                                             <span className="text-[10px] px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full font-bold">{inv.plan?.split(' ')?.[0] || 'Plan'}</span>
                                                                         </div>
                                                                         <p className="text-xs text-slate-500 truncate max-w-[200px]">{inv.purchaser}</p>
+                                                                        {inv.company && inv.company !== '—' && (
+                                                                            <p className="text-[10px] text-slate-400 font-medium truncate max-w-[200px]">{inv.company}</p>
+                                                                        )}
                                                                     </div>
                                                                 </div>
-                                                                <div className="flex items-center gap-6 mt-2 sm:mt-0">
+                                                                <div className="flex items-center gap-3 mt-2 sm:mt-0">
                                                                     <div className="text-right">
-                                                                        <p className="text-sm font-bold text-slate-900 leading-none mb-1">{inv.currency} {inv.amount.toLocaleString()}</p>
+                                                                        <p className="text-sm font-bold text-slate-900 leading-none mb-1">{inv.currency} {inv.amount?.toLocaleString()}</p>
                                                                         <p className={`text-[10px] font-bold ${inv.status === 'Succeeded' ? 'text-emerald-600' : 'text-amber-600'}`}>{inv.status}</p>
                                                                     </div>
                                                                     <button
                                                                         onClick={() => setSelectedInvoice(inv)}
                                                                         className="p-1.5 text-slate-300 hover:text-slate-900 border border-transparent hover:border-slate-100 rounded transition-all"
+                                                                        title="View details"
                                                                     >
                                                                         <ExternalLink className="size-3.5" />
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => setInvoices(prev => prev.map(i => i.id === inv.id ? { ...i, status: 'Cancelled' } : i))}
+                                                                        className="p-1.5 text-slate-200 hover:text-red-500 border border-transparent hover:border-red-100 hover:bg-red-50 rounded transition-all"
+                                                                        title="Cancel invoice"
+                                                                    >
+                                                                        <X className="size-3.5" />
                                                                     </button>
                                                                 </div>
                                                             </div>
@@ -2237,7 +2347,11 @@ export default function AdminDashboardClient() {
                                 </div>
                                 <div className="text-right space-y-1">
                                     <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Date Issued</p>
-                                    <p className="text-xs font-bold text-slate-900">{selectedInvoice.date}</p>
+                                    <p className="text-xs font-bold text-slate-900">
+                                        {selectedInvoice.date
+                                            ? new Date(selectedInvoice.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+                                            : '—'}
+                                    </p>
                                     <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mt-2">Status</p>
                                     <p className={`text-[10px] font-black uppercase tracking-widest ${selectedInvoice.status === 'Succeeded' ? 'text-emerald-500' : 'text-amber-500'}`}>{selectedInvoice.status}</p>
                                 </div>
@@ -2247,13 +2361,19 @@ export default function AdminDashboardClient() {
                             <div className="grid grid-cols-2 gap-8 mb-6 border-y border-slate-100 py-6">
                                 <div>
                                     <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Billed To</p>
-                                    <h3 className="text-sm font-bold text-slate-900 mb-1">{selectedInvoice.purchaser}</h3>
+                                    <h3 className="text-sm font-bold text-slate-900 mb-0.5">{selectedInvoice.purchaser}</h3>
+                                    {selectedInvoice.company && selectedInvoice.company !== '—' && (
+                                        <p className="text-xs font-bold text-slate-700 mb-0.5">{selectedInvoice.company}</p>
+                                    )}
                                     <p className="text-xs text-slate-500 leading-tight font-medium">Customer Account</p>
                                 </div>
                                 <div className="text-right">
                                     <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Paid To</p>
                                     <h3 className="text-sm font-black text-slate-900 mb-1">Recruit Flow</h3>
-                                    <p className="text-xs text-slate-500 leading-tight font-medium">Platform HQ</p>
+                                    <p className="text-xs text-slate-500 leading-tight font-medium">Itahari, Sunsari, Nepal</p>
+                                    {selectedInvoice.activatedBy && (
+                                        <p className="text-[10px] text-slate-400 mt-1">Activated by: {selectedInvoice.activatedBy}</p>
+                                    )}
                                 </div>
                             </div>
 
@@ -2268,11 +2388,13 @@ export default function AdminDashboardClient() {
                                 <tbody>
                                     <tr className="border-b border-slate-50">
                                         <td className="py-4">
-                                            <p className="text-xs font-bold text-slate-900">{selectedInvoice.plan}</p>
-                                            <p className="text-[10px] text-slate-500 mt-0.5">Platform Access Grant</p>
+                                            <p className="text-xs font-bold text-slate-900">{selectedInvoice.plan} — Platform Subscription</p>
+                                            <p className="text-[10px] text-slate-500 mt-0.5">
+                                                Access Grant{selectedInvoice.duration ? ` · ${selectedInvoice.duration}` : ' · Lifetime'}
+                                            </p>
                                         </td>
                                         <td className="py-4 text-right">
-                                            <p className="text-xs font-black text-slate-900">{selectedInvoice.currency} {selectedInvoice.amount.toLocaleString()}</p>
+                                            <p className="text-xs font-black text-slate-900">{selectedInvoice.currency} {selectedInvoice.amount?.toLocaleString()}</p>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -2280,46 +2402,54 @@ export default function AdminDashboardClient() {
 
                             {/* Totals */}
                             <div className="flex justify-end">
-                                <div className="w-40 space-y-2">
+                                <div className="w-44 space-y-2">
                                     <div className="flex justify-between items-center text-[10px] font-medium text-slate-500">
                                         <span>Subtotal</span>
-                                        <span>{selectedInvoice.amount.toLocaleString()}</span>
+                                        <span>{selectedInvoice.currency} {selectedInvoice.amount?.toLocaleString()}</span>
                                     </div>
                                     <div className="flex justify-between items-center border-t border-slate-900 pt-2">
-                                        <span className="text-[10px] font-black text-[#0f172a] uppercase tracking-widest">Total Due</span>
-                                        <span className="text-sm font-black text-[#0f172a]">{selectedInvoice.currency} {selectedInvoice.amount.toLocaleString()}</span>
+                                        <span className="text-[10px] font-black text-[#0f172a] uppercase tracking-widest">Total Paid</span>
+                                        <span className="text-sm font-black text-[#0f172a]">{selectedInvoice.currency} {selectedInvoice.amount?.toLocaleString()}</span>
                                     </div>
                                 </div>
                             </div>
 
                             <div className="mt-8 text-center text-[9px] font-bold text-slate-400 uppercase tracking-widest border-t border-slate-100 pt-6">
-                                Thank you for your business
+                                Thank you for your business · work@ujjwalrupakheti.com.np
                             </div>
                         </div>
 
                         {/* Modal Actions */}
-                        <div className="bg-slate-50 p-5 flex items-center justify-end gap-3 border-t border-slate-100">
-                            <button
-                                onClick={() => setSelectedInvoice(null)}
-                                className="px-5 py-2.5 bg-white text-slate-700 rounded text-xs font-black uppercase tracking-widest border border-slate-100 hover:bg-slate-100 transition-all"
-                            >
-                                Close
-                            </button>
+                        <div className="bg-slate-50 p-5 flex items-center justify-between gap-3 border-t border-slate-100">
                             <button
                                 onClick={() => {
-                                    const originalTitle = document.title;
-                                    const username = selectedInvoice.purchaser.split('@')[0];
-                                    document.title = `${selectedInvoice.id}-${username}`;
-                                    window.print();
-                                    // small timeout to ensure title is caught by print dialog
-                                    setTimeout(() => {
-                                        document.title = originalTitle;
-                                    }, 500);
+                                    setInvoices(prev => prev.map(i => i.id === selectedInvoice.id ? { ...i, status: 'Cancelled' } : i));
+                                    setSelectedInvoice(null);
                                 }}
-                                className="px-5 py-2.5 bg-[#0f172a] text-white rounded text-xs font-black uppercase tracking-widest border border-transparent hover:bg-slate-800 transition-all shadow-lg flex items-center gap-2"
+                                className="px-4 py-2.5 text-red-500 rounded text-xs font-black uppercase tracking-widest border border-red-100 hover:bg-red-50 transition-all"
                             >
-                                <FileText className="size-4" /> Save / Print
+                                Cancel Invoice
                             </button>
+                            <div className="flex items-center gap-3">
+                                <button
+                                    onClick={() => setSelectedInvoice(null)}
+                                    className="px-5 py-2.5 bg-white text-slate-700 rounded text-xs font-black uppercase tracking-widest border border-slate-100 hover:bg-slate-100 transition-all"
+                                >
+                                    Close
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        const originalTitle = document.title;
+                                        const username = selectedInvoice.purchaser.split('@')[0];
+                                        document.title = `${selectedInvoice.id}-${username}`;
+                                        window.print();
+                                        setTimeout(() => { document.title = originalTitle; }, 500);
+                                    }}
+                                    className="px-5 py-2.5 bg-[#0f172a] text-white rounded text-xs font-black uppercase tracking-widest border border-transparent hover:bg-slate-800 transition-all shadow-lg flex items-center gap-2"
+                                >
+                                    <FileText className="size-4" /> Save / Print
+                                </button>
+                            </div>
                         </div>
                     </motion.div>
                 </div>

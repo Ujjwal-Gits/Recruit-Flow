@@ -19,7 +19,7 @@ import {
     Mail, Calendar, MapPin, Save, Info, UserCog, Phone, Building,
     Upload, ShieldCheck, Lock, Globe, CheckCircle2, MessageSquare, Send,
     Maximize2, Download, QrCode, Image as ImageIcon, AlertCircle, ArrowUpCircle,
-    Clock
+    Clock, Menu, X as XIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
@@ -839,6 +839,7 @@ export default function DashboardClient() {
     const [loading, setLoading] = useState(true);
     const [authLoading, setAuthLoading] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [mobileNavOpen, setMobileNavOpen] = useState(false);
     const [creating, setCreating] = useState(false);
     const [copied, setCopied] = useState<string | null>(null);
     const [newJob, setNewJob] = useState({ title: '', company_name: '', description: '', workMode: 'Remote', deadline: '', links: [{ label: 'LinkedIn' }] as { label: string }[] });
@@ -1274,15 +1275,50 @@ export default function DashboardClient() {
             </aside>
 
             {/* Mobile Nav */}
-            <nav className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-slate-100 z-[60] flex items-center justify-between px-6">
+            <nav className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-slate-100 z-[60] flex items-center justify-between px-5">
                 <img src="/recruit-flow-logo.png" alt="Recruit Flow" className="h-6 w-auto object-contain" />
                 <button
-                    onClick={() => { setShowCreateModal(true); setCreatedJob(null); }}
-                    className="size-8 bg-slate-900 rounded-sm flex items-center justify-center text-white"
+                    onClick={() => setMobileNavOpen(o => !o)}
+                    className="size-9 flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-sm transition-all"
                 >
-                    <PlusCircle className="size-4" />
+                    {mobileNavOpen ? <XIcon className="size-5" /> : <Menu className="size-5" />}
                 </button>
             </nav>
+
+            {/* Mobile Nav Drawer */}
+            {mobileNavOpen && (
+                <div className="lg:hidden fixed inset-0 z-[59]" onClick={() => setMobileNavOpen(false)}>
+                    <div className="absolute top-16 left-0 right-0 bg-white border-b border-slate-100 shadow-xl px-4 py-3 space-y-1"
+                        onClick={e => e.stopPropagation()}>
+                        {[
+                            { tab: 'postings' as const, label: 'Job Postings', icon: LayoutDashboard },
+                            { tab: 'communication' as const, label: 'Mail Templates', icon: Mail },
+                            { tab: 'crm' as const, label: 'Candidate CRM', icon: Users },
+                            { tab: 'calendar' as const, label: 'Interview Calendar', icon: Calendar },
+                            { tab: 'profile' as const, label: 'Profile Management', icon: UserCog },
+                            { tab: 'support' as const, label: 'Customer Support', icon: MessageSquare },
+                        ].map(({ tab, label, icon: Icon }) => (
+                            <button
+                                key={tab}
+                                onClick={() => { setActiveTab(tab); setMobileNavOpen(false); }}
+                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-sm text-xs font-bold transition-all ${activeTab === tab ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'}`}
+                            >
+                                <Icon className="size-4" />
+                                {label}
+                            </button>
+                        ))}
+                        {activeTab === 'postings' && (
+                            <button
+                                onClick={() => { setShowCreateModal(true); setCreatedJob(null); setMobileNavOpen(false); }}
+                                className="w-full flex items-center gap-3 px-4 py-3 rounded-sm text-xs font-bold bg-slate-100 text-slate-900 hover:bg-slate-200 transition-all mt-1"
+                            >
+                                <PlusCircle className="size-4" />
+                                Create New Posting
+                            </button>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* Main Content */}
             <main className="lg:pl-64 pt-16 lg:pt-0">
@@ -1602,7 +1638,9 @@ export default function DashboardClient() {
                                                         rows={7}
                                                         value={(mailSettings as any)[tpl.bodyName]}
                                                         onChange={(e) => setMailSettings(prev => ({ ...prev, [tpl.bodyName]: e.target.value }))}
-                                                        className="w-full flex-1 min-h-[140px] bg-slate-50 border border-slate-100 rounded-sm px-4 py-3 text-sm text-slate-900 outline-none focus:border-slate-400 focus:bg-white transition-all resize-none font-medium leading-relaxed"
+                                                        onFocus={(e) => e.currentTarget.setAttribute('data-lenis-prevent', '')}
+                                                        onBlur={(e) => e.currentTarget.removeAttribute('data-lenis-prevent')}
+                                                        className="w-full flex-1 min-h-[140px] bg-slate-50 border border-slate-100 rounded-sm px-4 py-3 text-sm text-slate-900 outline-none focus:border-slate-400 focus:bg-white transition-all resize-none font-medium leading-relaxed overscroll-contain"
                                                     />
                                                 </div>
                                             </div>

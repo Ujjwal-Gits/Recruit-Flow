@@ -469,10 +469,12 @@ export default function AboutPage() {
                                     style={{ zIndex: 10, userSelect: 'none', pointerEvents: 'none', display: 'block' } as React.CSSProperties}
                                 />
 
-                                {/* BODY HOTSPOTS — auto-cycle + hover override */}
-                                <BodyHotspotController />
+                                {/* BODY HOTSPOTS — hidden on mobile, shown md+ */}
+                                <div className="hidden md:block">
+                                    <BodyHotspotController />
+                                </div>
 
-                                {/* Handwritten text — left side of face */}
+                                {/* Handwritten text — always visible */}
                                 <div className="absolute z-20 pointer-events-none" style={{ left: '3%', top: '44.5%', overflow: 'visible' }}>
                                     <div style={{ transform: 'rotate(-8deg)', transformOrigin: 'left top', overflow: 'visible' }}>
                                         <motion.p

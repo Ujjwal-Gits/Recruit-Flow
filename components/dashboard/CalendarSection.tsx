@@ -429,33 +429,34 @@ export default function CalendarSection({ user }: { user: any }) {
     return (
         <div className="space-y-6">
             {/* Toolbar */}
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center bg-slate-100 border border-slate-100 rounded-sm p-1">
                     <div className="flex items-center gap-2 px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-sm bg-white shadow-sm text-slate-900">
                         <Calendar className="size-3" /> Interviews
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
-                    <div className="flex items-center bg-white border border-slate-200 rounded-sm px-3 py-2 focus-within:border-slate-900 transition-all">
-                        <Search className="size-3.5 text-slate-300" />
+                    <div className="flex items-center bg-white border border-slate-200 rounded-sm px-3 py-2 focus-within:border-slate-900 transition-all flex-1 min-w-0">
+                        <Search className="size-3.5 text-slate-300 shrink-0" />
                         <input
                             value={calendarSearch}
                             onChange={e => setCalendarSearch(e.target.value)}
                             placeholder="Find Session..."
-                            className="bg-transparent border-none text-xs font-bold text-slate-900 outline-none w-40 placeholder:text-slate-300 ml-2"
+                            className="bg-transparent border-none text-xs font-bold text-slate-900 outline-none w-full min-w-0 placeholder:text-slate-300 ml-2"
                         />
                     </div>
                     <button
                         onClick={() => setShowNewInvite(true)}
-                        className="bg-slate-900 text-white px-6 py-2 rounded-sm text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all flex items-center gap-2 shadow-lg active:scale-95"
+                        className="bg-slate-900 text-white px-4 py-2 rounded-sm text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all flex items-center gap-2 shadow-lg active:scale-95 shrink-0"
                     >
                         <Plus className="size-3" /> New Invite
                     </button>
                 </div>
             </div>
 
-            {/* Table */}
+            {/* Table — horizontally scrollable on mobile */}
             <div className="bg-white border border-slate-100 rounded shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] overflow-hidden">
+                <div className="overflow-x-auto">
                 {loadingMeetings ? (
                     <div className="flex items-center justify-center py-20"><BouncyLoader /></div>
                 ) : filteredMeetings.length === 0 ? (
@@ -465,49 +466,46 @@ export default function CalendarSection({ user }: { user: any }) {
                         <p className="text-xs text-slate-300 font-medium mt-1">Click "New Invite" to log a meeting manually</p>
                     </div>
                 ) : (
-                    <table className="w-full text-left">
+                    <table className="w-full text-left min-w-[600px]">
                         <thead className="border-b border-slate-100 bg-slate-50/50">
                             <tr>
-                                <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Meeting</th>
-                                <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Candidate</th>
-                                <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Date</th>
-                                <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Time</th>
-                                <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Mode</th>
-                                <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Status</th>
+                                <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Meeting</th>
+                                <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Candidate</th>
+                                <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Date</th>
+                                <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Time</th>
+                                <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Mode</th>
+                                <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Status</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
                             {filteredMeetings.map(m => {
                                 const cfg = statusCfg(m.status);
                                 return (
-                                    <tr
-                                        key={m.id}
-                                        onClick={() => setSelectedMeeting(m)}
-                                        className="hover:bg-slate-50/60 transition-colors cursor-pointer"
-                                    >
-                                        <td className="px-6 py-4">
+                                    <tr key={m.id} onClick={() => setSelectedMeeting(m)}
+                                        className="hover:bg-slate-50/60 transition-colors cursor-pointer">
+                                        <td className="px-4 py-4">
                                             <p className="text-sm font-bold text-slate-900">{m.title}</p>
                                             <p className="text-[10px] text-slate-400 font-medium">{m.id.slice(0, 8)}</p>
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="px-4 py-4">
                                             <p className="text-xs font-bold text-slate-700">{m.candidate_name || '—'}</p>
                                             {m.candidate_email && <p className="text-[10px] text-slate-400 font-medium">{m.candidate_email}</p>}
                                         </td>
-                                        <td className="px-6 py-4 text-xs font-bold text-slate-600">
+                                        <td className="px-4 py-4 text-xs font-bold text-slate-600 whitespace-nowrap">
                                             {fmt(m.start_time, { month: 'short', day: 'numeric', year: 'numeric' })}
                                         </td>
-                                        <td className="px-6 py-4 text-xs font-bold text-slate-600">
+                                        <td className="px-4 py-4 text-xs font-bold text-slate-600 whitespace-nowrap">
                                             {fmt(m.start_time, { hour: '2-digit', minute: '2-digit' })}
                                             {' – '}
                                             {fmt(m.end_time, { hour: '2-digit', minute: '2-digit' })}
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="px-4 py-4">
                                             <span className={`inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-sm border ${m.mode === 'virtual' ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
                                                 {m.mode === 'virtual' ? <Video className="size-2.5" /> : <Building2 className="size-2.5" />}
                                                 {m.mode === 'virtual' ? 'Virtual' : 'On-Site'}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="px-4 py-4">
                                             <span className={`inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-sm border ${cfg.color}`}>
                                                 {cfg.icon}
                                                 {cfg.label}
@@ -519,7 +517,8 @@ export default function CalendarSection({ user }: { user: any }) {
                         </tbody>
                     </table>
                 )}
-                <div className="px-6 py-3 border-t border-slate-100 bg-slate-50/50 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                </div>
+                <div className="px-4 py-3 border-t border-slate-100 bg-slate-50/50 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                     {filteredMeetings.length} session{filteredMeetings.length !== 1 ? 's' : ''} logged
                 </div>
             </div>

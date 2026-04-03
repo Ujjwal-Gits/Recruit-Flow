@@ -381,6 +381,16 @@ export default function LandingPage() {
                         <button className="w-full py-2 border border-slate-200 rounded text-xs font-mono text-slate-800 hover:border-slate-800 transition-all uppercase tracking-widest">VIEW PIPELINE</button>
                     </motion.div>
 
+                    {/* Mobile vertical connector — hidden on md+ */}
+                    <div className="flex md:hidden flex-col items-center z-10 -my-4">
+                        <div className="w-px h-8 bg-slate-200" />
+                        <div className="size-10 rounded-full border border-slate-200 bg-white flex items-center justify-center shadow-sm my-1">
+                            <span className="material-symbols-outlined text-slate-400 text-base">hub</span>
+                        </div>
+                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mt-1">Recruit Flow</p>
+                        <div className="w-px h-8 bg-slate-200 mt-1" />
+                    </div>
+
                     {/* Applicant Card */}
                     <motion.div
                         className="z-10 bg-white p-8 rounded-lg border border-slate-200 w-full max-w-sm shadow-[0_1px_3px_0_rgba(0,0,0,0.02)]"

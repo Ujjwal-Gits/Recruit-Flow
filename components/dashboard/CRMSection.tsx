@@ -172,7 +172,8 @@ export default function CRMSection({ user, mailSettings }: { user: any, mailSett
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between gap-4">
+            {/* Toolbar — wraps on mobile */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                     <div className="flex items-center bg-slate-100 border border-slate-100 rounded-sm p-1">
                         <div className="flex items-center gap-2 px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-sm bg-white shadow-sm text-slate-900">
@@ -180,34 +181,35 @@ export default function CRMSection({ user, mailSettings }: { user: any, mailSett
                         </div>
                     </div>
                 </div>
-                <div className="flex items-center gap-3">
-                    <div className="flex items-center bg-white border border-slate-200 rounded-sm px-3 py-2 focus-within:border-slate-900 transition-all">
-                        <Search className="size-3.5 text-slate-300" />
+                <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center bg-white border border-slate-200 rounded-sm px-3 py-2 focus-within:border-slate-900 transition-all flex-1 min-w-0">
+                        <Search className="size-3.5 text-slate-300 shrink-0" />
                         <input
                             value={crmSearch}
                             onChange={(e) => setCrmSearch(e.target.value)}
                             placeholder="Search Applications..."
-                            className="bg-transparent border-none text-xs font-bold text-slate-900 outline-none w-40 placeholder:text-slate-300 ml-2"
+                            className="bg-transparent border-none text-xs font-bold text-slate-900 outline-none w-full min-w-0 placeholder:text-slate-300 ml-2"
                         />
                     </div>
-                    <div className="relative group">
+                    <div className="relative group shrink-0">
                         <select
                             value={crmFilter}
                             onChange={(e) => setCrmFilter(e.target.value as any)}
-                            className="bg-white border border-slate-200 rounded-sm py-2 px-6 pr-10 text-[10px] font-black uppercase tracking-widest text-slate-900 outline-none hover:border-slate-400 transition-all appearance-none cursor-pointer"
+                            className="bg-white border border-slate-200 rounded-sm py-2 px-4 pr-8 text-[10px] font-black uppercase tracking-widest text-slate-900 outline-none hover:border-slate-400 transition-all appearance-none cursor-pointer"
                         >
-                            <option value="all">Status: ALL</option>
-                            <option value="accepted">Status: ACC</option>
-                            <option value="rejected">Status: REJ</option>
-                            <option value="pending">Status: PEN</option>
+                            <option value="all">All</option>
+                            <option value="accepted">Accepted</option>
+                            <option value="rejected">Rejected</option>
+                            <option value="pending">Pending</option>
                         </select>
-                        <MoreHorizontal className="absolute right-4 top-1/2 -translate-y-1/2 size-3 text-slate-300 pointer-events-none" />
+                        <MoreHorizontal className="absolute right-2 top-1/2 -translate-y-1/2 size-3 text-slate-300 pointer-events-none" />
                     </div>
                 </div>
             </div>
 
-
+            {/* Table — horizontally scrollable on mobile */}
             <div className="bg-white border border-slate-100 rounded shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] overflow-hidden">
+                <div className="overflow-x-auto">
                 {loadingCandidates ? (
                     <div className="flex items-center justify-center py-20">
                         <BouncyLoader />
@@ -218,34 +220,35 @@ export default function CRMSection({ user, mailSettings }: { user: any, mailSett
                         <p className="text-sm font-bold text-slate-400">No candidates found</p>
                     </div>
                 ) : (
-                    <table className="w-full text-left">
+                    <table className="w-full text-left min-w-[640px]">
                         <thead className="border-b border-slate-100 bg-slate-50/50">
                             <tr>
-                                <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Candidate</th>
-                                <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Email</th>
-                                <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Job</th>
-                                <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">ATS</th>
-                                <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Status</th>
-                                <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Date</th>
-                                <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Resume</th>
-                                <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Contact</th>
+                                <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Candidate</th>
+                                <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Email</th>
+                                <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Job</th>
+                                <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">ATS</th>
+                                <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Status</th>
+                                <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Date</th>
+                                <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Resume</th>
+                                <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Contact</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
                              {filteredCandidates.map(c => (
-                                <CRMCandidateRow 
-                                    key={c.id} 
-                                    c={c} 
-                                    user={user} 
-                                    setPreviewUrl={setPreviewUrl} 
-                                    setMailTarget={setMailTarget} 
-                                    statusColor={statusColor} 
+                                <CRMCandidateRow
+                                    key={c.id}
+                                    c={c}
+                                    user={user}
+                                    setPreviewUrl={setPreviewUrl}
+                                    setMailTarget={setMailTarget}
+                                    statusColor={statusColor}
                                 />
                             ))}
                         </tbody>
                     </table>
                 )}
-                <div className="px-6 py-3 border-t border-slate-100 bg-slate-50/50 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                </div>
+                <div className="px-4 py-3 border-t border-slate-100 bg-slate-50/50 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                     {filteredCandidates.length} candidate{filteredCandidates.length !== 1 ? 's' : ''} indexed
                 </div>
             </div>
