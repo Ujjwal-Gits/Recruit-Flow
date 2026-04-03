@@ -21,10 +21,11 @@ const PUBLIC_API_ROUTES = [
     '/api/auth/verify-otp',
     '/api/auth/forgot-password',
     '/api/auth/reset-password',
-    '/api/auth/callback',         // Add this: allows OAuth flow to complete
-    '/api/process-application',   // public: candidate submits resume
-    '/api/job-info',              // public: job details for apply page
-    '/api/migrate',               // Temporary: Allow running migration script
+    '/api/auth/callback',
+    '/api/process-application',
+    '/api/job-info',
+    '/api/migrate',
+    '/api/contact',
 ];
 
 // Routes that should NEVER be accessible in production

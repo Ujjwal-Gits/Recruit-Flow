@@ -561,16 +561,13 @@ export default function AboutPage() {
             {/* CTA */}
             <motion.section className="py-20 md:py-28 bg-slate-900" {...fadeInUp}>
                 <div className="max-w-3xl mx-auto px-6 text-center">
-                    <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight mb-4">Ready to transform your hiring?</h2>
-                    <p className="text-slate-400 text-base mb-10 max-w-md mx-auto font-medium">Join thousands of recruiters who trust the Arctic Protocol to find exceptional talent.</p>
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                        <Link href="/register" className="bg-white text-slate-900 px-8 py-4 rounded text-xs font-black uppercase tracking-[0.2em] hover:bg-slate-100 transition-all active:scale-95 shadow-xl flex items-center gap-3">
-                            Get Started Free <ArrowRight className="size-4" />
-                        </Link>
-                        <Link href="/contact" className="text-slate-400 px-6 py-4 text-xs font-black uppercase tracking-[0.2em] hover:text-white transition-colors">
-                            Talk to Sales
-                        </Link>
-                    </div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 mb-5">Recruit Flow · Itahari, Sunsari, Nepal</p>
+                    <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight mb-5 leading-snug">
+                        Built by a developer who believes<br className="hidden md:block" /> recruitment deserves better tools.
+                    </h2>
+                    <p className="text-slate-400 text-sm leading-relaxed max-w-xl mx-auto font-medium">
+                        Recruit Flow is an independent product focused on making the hiring process faster, cleaner, and more transparent — for recruiters of all sizes. No bloat, no unnecessary complexity. Just the tools you need to find the right people.
+                    </p>
                 </div>
             </motion.section>
 

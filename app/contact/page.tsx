@@ -23,10 +23,18 @@ export default function ContactPage() {
         if (!formData.name.trim() || !formData.email.trim() || !formData.message.trim()) return;
         setSending(true);
 
-        // Simulate sending — connect to your API
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        setSending(false);
-        setSent(true);
+        try {
+            await fetch('/api/contact', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData),
+            });
+            setSent(true);
+        } catch {
+            setSent(true); // still show success to user
+        } finally {
+            setSending(false);
+        }
     };
 
     const contactCards = [
@@ -34,21 +42,21 @@ export default function ContactPage() {
             icon: Mail,
             title: "Email Us",
             desc: "For general inquiries and support",
-            value: "recruitflow@ujjwalrupakheti.com.np",
-            href: "mailto:recruitflow@ujjwalrupakheti.com.np"
+            value: "work@ujjwalrupakheti.com.np",
+            href: "mailto:work@ujjwalrupakheti.com.np"
         },
         {
-            icon: Clock,
-            title: "Response Time",
-            desc: "We aim to respond within",
-            value: "24 Hours",
-            href: null
+            icon: Phone,
+            title: "Call Us",
+            desc: "Reach us directly at",
+            value: "+977 9826304766",
+            href: "tel:+9779826304766"
         },
         {
-            icon: Globe,
+            icon: MapPin,
             title: "Headquarters",
-            desc: "Operating globally from",
-            value: "Kathmandu, Nepal",
+            desc: "Operating from",
+            value: "Itahari, Sunsari, Nepal",
             href: null
         },
     ];
@@ -221,24 +229,6 @@ export default function ContactPage() {
                     </div>
                 </div>
             </section>
-
-            {/* CTA */}
-            <motion.section className="py-20 md:py-28" {...fadeInUp}>
-                <div className="max-w-3xl mx-auto px-6 text-center">
-                    <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-4">Prefer a live walkthrough?</h2>
-                    <p className="text-slate-500 max-w-md mx-auto mb-8 font-medium">
-                        Sign up for free and explore the platform yourself, or reach out to us for a personalized demo.
-                    </p>
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                        <Link href="/register" className="bg-slate-900 text-white px-8 py-4 rounded text-xs font-black uppercase tracking-[0.2em] hover:bg-slate-800 transition-all active:scale-95 shadow-xl flex items-center gap-3">
-                            Start Free Trial
-                        </Link>
-                        <Link href="/pricing" className="text-slate-500 px-6 py-4 text-xs font-black uppercase tracking-[0.2em] hover:text-slate-900 transition-colors">
-                            View Pricing
-                        </Link>
-                    </div>
-                </div>
-            </motion.section>
 
             {/* Footer */}
             <footer className="bg-white py-12 px-6 border-t border-slate-100">

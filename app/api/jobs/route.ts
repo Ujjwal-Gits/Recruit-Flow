@@ -2,8 +2,6 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { NextResponse } from 'next/server';
 import { getAuthenticatedUser, unauthorizedResponse, serverErrorResponse } from '@/lib/auth-guard';
 
-export const dynamic = 'force-dynamic';
-
 export async function GET() {
     try {
         const auth = await getAuthenticatedUser();

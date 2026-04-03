@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, PlayCircle, Verified, Bolt, CheckCircle, Snowflake, FileText, Sparkles, Eye, Network, Shield, X, MessageSquare, QrCode, ShieldCheck, LayoutDashboard } from "lucide-react";
 import BouncyLoader from "@/components/BouncyLoader";
 import { supabase } from "@/lib/supabase";
+import PublicNavbar from "@/components/PublicNavbar";
 
 export default function LandingPage() {
     const [isTicked, setIsTicked] = useState(false);
@@ -62,23 +63,17 @@ export default function LandingPage() {
 
     // Check real auth session
     useEffect(() => {
-        const fetchRole = async (userId: string, email: string) => {
+        const fetchRole = async () => {
             setRoleLoading(true);
             try {
-                // Rely purely on database profile
-
-                const { data, error } = await supabase
-                    .from('profiles')
-                    .select('role')
-                    .eq('id', userId)
-                    .single();
-                
-                if (!error && data) {
-                    setUserRole(data.role);
+                const res = await fetch('/api/profile', { cache: 'no-store' });
+                if (res.ok) {
+                    const { profile } = await res.json();
+                    setUserRole(profile?.role ?? null);
                 } else {
                     setUserRole(null);
                 }
-            } catch (e) {
+            } catch {
                 setUserRole(null);
             } finally {
                 setRoleLoading(false);
@@ -88,9 +83,8 @@ export default function LandingPage() {
         supabase.auth.getSession().then(({ data: { session } }) => {
             setIsLoggedIn(!!session);
             if (session?.user?.email) setUserEmail(session.user.email);
-            
-            if (session?.user?.id && session?.user?.email) {
-                fetchRole(session.user.id, session.user.email);
+            if (session?.user?.id) {
+                fetchRole();
             } else {
                 setRoleLoading(false);
                 setUserRole(null);
@@ -100,9 +94,8 @@ export default function LandingPage() {
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
             setIsLoggedIn(!!session);
             if (session?.user?.email) setUserEmail(session.user.email);
-            
-            if (session?.user?.id && session?.user?.email) {
-                fetchRole(session.user.id, session.user.email);
+            if (session?.user?.id) {
+                fetchRole();
             } else {
                 setUserRole(null);
                 setRoleLoading(false);
@@ -181,83 +174,19 @@ export default function LandingPage() {
     return (
         <div className="bg-background-light dark:bg-background-dark font-display text-deep-slate antialiased min-h-screen">
             {/* 1. Floating Navigation */}
-            <nav className="fixed top-0 left-0 right-0 z-50 h-16 bg-white/80 backdrop-blur-xl border-b border-slate-100 flex items-center justify-center">
-                <div className="w-full max-w-[1200px] px-8 flex items-center justify-between relative">
-                    <div className="flex items-center">
-                        <div className="h-10 w-auto">
-                            <img src="/recruit-flow-logo.png" alt="Recruit Flow" className="h-full w-auto object-contain" />
-                        </div>
-                    </div>
-
-                    <div className="hidden md:flex items-center gap-10 absolute left-1/2 -translate-x-1/2">
-                        <Link className="text-slate-500 hover:text-slate-900 text-xs font-semibold tracking-tight transition-colors" href="/about">About Us</Link>
-                        <Link className="text-slate-500 hover:text-slate-900 text-xs font-semibold tracking-tight transition-colors" href="/pricing">Pricing</Link>
-                        <Link className="text-slate-500 hover:text-slate-900 text-xs font-semibold tracking-tight transition-colors" href="/contact">Contact Us</Link>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                        {isLoggedIn ? (
-                            <>
-                                <Link 
-                                    href={['owner', 'manager', 'support', 'admin'].includes(userRole || '') ? "/iamadmin" : "/dashboard"} 
-                                    className="bg-slate-900 text-white text-xs font-bold tracking-tight px-5 py-2.5 rounded hover:bg-slate-800 transition-all shadow-md active:scale-95 flex items-center gap-2 min-w-[120px] justify-center"
-                                >
-                                    {roleLoading ? (
-                                        <BouncyLoader size="sm" />
-                                    ) : (
-                                        <>
-                                            {['owner', 'manager', 'support', 'admin'].includes(userRole || '') ? (
-                                                <>
-                                                    <ShieldCheck className="size-4 text-emerald-400" />
-                                                    AGENT
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <LayoutDashboard className="size-4 text-slate-400" />
-                                                    Dashboard
-                                                </>
-                                            )}
-                                        </>
-                                    )}
-                                </Link>
-                                <button
-                                    onClick={async () => { await supabase.auth.signOut(); setIsLoggedIn(false); }}
-                                    className="text-slate-500 text-xs font-bold tracking-tight px-4 py-2.5 hover:bg-red-50 hover:text-red-600 rounded transition-all flex items-center gap-1.5"
-                                >
-                                    <span className="material-symbols-outlined text-sm">logout</span>
-                                    Logout
-                                </button>
-                            </>
-                        ) : (
-                            <>
-                                <Link href="/login" className="text-slate-900 text-xs font-bold tracking-tight px-4 py-2 hover:bg-slate-50 rounded transition-all">
-                                    Log in
-                                </Link>
-                                <Link href="/register" className="bg-slate-900 text-white text-xs font-bold tracking-tight px-5 py-2.5 rounded hover:bg-slate-800 transition-all shadow-md active:scale-95">
-                                    Sign Up
-                                </Link>
-                            </>
-                        )}
-                    </div>
-                </div>
-            </nav>
+            <PublicNavbar />
 
             {/* 2. Hero Section */}
             <section className="relative overflow-hidden min-h-screen flex items-center">
                 <div className="absolute inset-0 z-0 opacity-[0.7] pointer-events-none"
-                    style={{
-                        backgroundImage: 'radial-gradient(#CBD5E1 1px, transparent 1px)',
-                        backgroundSize: '16px 16px'
-                    }}>
+                    style={{ backgroundImage: 'radial-gradient(#CBD5E1 1px, transparent 1px)', backgroundSize: '16px 16px' }}>
                 </div>
 
-                <div className="relative w-full pt-20 pb-10 px-6 max-w-7xl mx-auto z-10">
-                    <div className="grid lg:grid-cols-2 gap-16 items-center">
-                        <motion.div
-                            className="space-y-8 relative"
-                            {...fadeInUp}
-                        >
-                            <div className="absolute -top-32 right-0 md:-right-28 z-20 pointer-events-auto">
+                <div className="relative w-full pt-24 pb-12 px-5 max-w-7xl mx-auto z-10">
+                    <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+                        <motion.div className="space-y-6 relative" {...fadeInUp}>
+                            {/* Sticky note — hidden on mobile, shown md+ */}
+                            <div className="hidden md:block absolute -top-32 right-0 md:-right-28 z-20 pointer-events-auto">
                                 <motion.div
                                     className="relative w-[220px] aspect-square bg-[#fff9c4] shadow-2xl p-6 transform -rotate-[0.5deg] border border-yellow-200/50"
                                     initial={{ opacity: 0, rotate: -10, scale: 0.9 }}
@@ -301,46 +230,32 @@ export default function LandingPage() {
                                 </motion.div>
                             </div>
 
-                            <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-slate-900 leading-[1.1]">
+                            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-slate-900 leading-[1.1]">
                                 Hire Staff with <br />Absolute Precision.
                             </h1>
-                            <p className="text-base text-slate-500 max-w-sm leading-relaxed">
+                            <p className="text-sm sm:text-base text-slate-500 max-w-sm leading-relaxed">
                                 The minimalist engine for modern recruitment. Intelligent candidate insights delivered instantly.
                             </p>
                             <div className="flex items-center gap-4 pt-2">
-                                <Link 
-                                    href={['owner', 'manager', 'support', 'admin'].includes(userRole || '') ? "/iamadmin" : "/dashboard"} 
-                                    className="bg-slate-900 text-white px-6 py-4 rounded text-xs font-bold hover:bg-slate-800 transition-all active:scale-95 flex items-center gap-3 shadow-xl h-12"
+                                <Link
+                                    href={isLoggedIn
+                                        ? (['owner', 'manager', 'support', 'admin'].includes(userRole || '') ? '/iamadmin' : '/dashboard')
+                                        : '/login'
+                                    }
+                                    className="bg-slate-900 text-white px-6 sm:px-8 py-3.5 rounded text-xs font-black uppercase tracking-[0.15em] hover:bg-slate-800 transition-all active:scale-95 shadow-lg h-12 flex items-center gap-2.5 w-full sm:w-auto justify-center"
                                 >
-                                    {roleLoading ? (
-                                        <BouncyLoader size="sm" />
-                                    ) : (
-                                        <>
-                                            {['owner', 'manager', 'support', 'admin'].includes(userRole || '') ? (
-                                                <>
-                                                    <ShieldCheck className="size-5 text-emerald-400" />
-                                                    ENTER AGENT TERMINAL
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <LayoutDashboard className="size-5 text-slate-400" />
-                                                    LAUNCH PIPELINE
-                                                </>
-                                            )}
-                                        </>
-                                    )}
+                                    <LayoutDashboard className="size-4 text-slate-400" />
+                                    Post a Vacancy
                                 </Link>
-                                <div className="h-px w-8 bg-slate-200"></div>
-                                <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest">Version_2.0</span>
                             </div>
                         </motion.div>
 
                         <motion.div
-                            className="relative flex items-center justify-end md:pr-24"
+                            className="relative flex items-center justify-center lg:justify-end md:pr-24"
                             {...fadeInUp}
                             transition={{ ...fadeInUp.transition, delay: 0.2 }}
                         >
-                            <div className="relative w-[310px] h-[440px] md:translate-x-32">
+                            <div className="relative w-[260px] h-[380px] sm:w-[310px] sm:h-[440px] md:translate-x-32">
                                 <div className="absolute inset-0 bg-slate-100 border border-slate-200 rounded shadow-sm -rotate-12 -translate-x-12 translate-y-4 overflow-hidden pointer-events-none">
                                     <div className="p-6 h-full flex flex-col space-y-4 opacity-30 grayscale text-slate-900 font-sans">
                                         <div className="flex justify-between items-start">
@@ -412,30 +327,27 @@ export default function LandingPage() {
             </section>
 
             {/* 3. Social Proof */}
-            <motion.section
-                className="py-12 border-y border-slate-100 bg-slate-50/30"
-                {...fadeInUp}
-            >
-                <div className="max-w-7xl mx-auto px-6">
-                    <h4 className="text-center font-mono text-[11px] uppercase tracking-widest text-slate-400 mb-10">Trusted by Global Innovators</h4>
-                    <div className="flex flex-wrap justify-center items-center gap-12 md:gap-20 opacity-30 grayscale">
-                        <div className="text-2xl font-black italic tracking-tighter">VOLTA</div>
-                        <div className="text-2xl font-black italic tracking-tighter">ORION</div>
-                        <div className="text-2xl font-black italic tracking-tighter">HEXA</div>
-                        <div className="text-2xl font-black italic tracking-tighter">QUANTUM</div>
-                        <div className="text-2xl font-black italic tracking-tighter">APEX</div>
+            <motion.section className="py-10 border-y border-slate-100 bg-slate-50/30" {...fadeInUp}>
+                <div className="max-w-7xl mx-auto px-5">
+                    <h4 className="text-center font-mono text-[10px] uppercase tracking-widest text-slate-400 mb-8">Trusted by Global Innovators</h4>
+                    <div className="flex flex-wrap justify-center items-center gap-8 md:gap-20 opacity-30 grayscale">
+                        <div className="text-xl font-black italic tracking-tighter">VOLTA</div>
+                        <div className="text-xl font-black italic tracking-tighter">ORION</div>
+                        <div className="text-xl font-black italic tracking-tighter">HEXA</div>
+                        <div className="text-xl font-black italic tracking-tighter">QUANTUM</div>
+                        <div className="text-xl font-black italic tracking-tighter">APEX</div>
                     </div>
                 </div>
             </motion.section>
 
             {/* 4. The Bridge Section */}
-            <section className="py-24 max-w-7xl mx-auto px-6">
-                <motion.div className="text-center mb-16" {...fadeInUp}>
-                    <h2 className="text-4xl font-extrabold text-slate-800 mb-4">The Professional Nexus</h2>
-                    <p className="font-mono text-sm text-slate-500 uppercase tracking-[0.2em] font-bold">The intelligent medium where talent meets vision</p>
+            <section className="py-16 md:py-24 max-w-7xl mx-auto px-5">
+                <motion.div className="text-center mb-12 md:mb-16" {...fadeInUp}>
+                    <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-slate-800 mb-4">The Professional Nexus</h2>
+                    <p className="font-mono text-xs text-slate-500 uppercase tracking-[0.2em] font-bold">The intelligent medium where talent meets vision</p>
                 </motion.div>
 
-                <div className="relative flex flex-col md:flex-row items-center justify-between gap-12 lg:gap-24 px-12">
+                <div className="relative flex flex-col md:flex-row items-center justify-between gap-8 md:gap-12 lg:gap-24 md:px-12">
                     {/* The Connecting Line (Improved Centering) */}
                     <div className="absolute top-1/2 left-0 right-0 h-px bg-slate-200 hidden md:flex items-center justify-center -translate-y-1/2 z-0">
                         <motion.div
@@ -490,13 +402,13 @@ export default function LandingPage() {
             </section>
 
             {/* 5. The Flipbook Innovation */}
-            <section className="py-24 px-6 max-w-6xl mx-auto">
-                <motion.div className="text-center mb-16" {...fadeInUp}>
-                    <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-4 text-slate-900">
+            <section className="py-16 md:py-24 px-5 max-w-6xl mx-auto">
+                <motion.div className="text-center mb-12 md:mb-16" {...fadeInUp}>
+                    <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black tracking-tight mb-4 text-slate-900">
                         Stop downloading PDFs.<br />
                         <span className="text-slate-400">Start reading stories.</span>
                     </h2>
-                    <p className="text-slate-500 max-w-xl mx-auto font-medium">Our Flipbook engine visualizes candidate data in high-fidelity, transforming static resumes into living performance models.</p>
+                    <p className="text-slate-500 max-w-xl mx-auto font-medium text-sm md:text-base">Our Flipbook engine visualizes candidate data in high-fidelity, transforming static resumes into living performance models.</p>
                 </motion.div>
 
                 <motion.div
@@ -539,7 +451,7 @@ export default function LandingPage() {
             </section>
 
             {/* 5.5. Pricing Section */}
-            <section className="py-24 bg-slate-50 border-y border-slate-100 relative overflow-hidden" id="pricing">
+            <section className="py-16 md:py-24 bg-slate-50 border-y border-slate-100 relative overflow-hidden" id="pricing">
                 <style jsx>{`
                     @keyframes pure-glass-shine {
                         0% { transform: translateX(-150%) skewX(12deg); }
@@ -551,26 +463,24 @@ export default function LandingPage() {
                 `}</style>
 
                 <div className="absolute inset-0 z-0 opacity-40 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 50% 0%, #E2E8F0 0%, transparent 70%)' }}></div>
-                <div className="max-w-7xl mx-auto px-6 relative z-10">
-                    <motion.div className="text-center mb-16" {...fadeInUp}>
+                <div className="max-w-7xl mx-auto px-5 relative z-10">
+                    <motion.div className="text-center mb-10 md:mb-16" {...fadeInUp}>
                         <span className="font-mono text-[10px] text-slate-400 font-bold uppercase tracking-[0.3em] mb-4 block">Access Tiers</span>
-                        <h2 className="text-4xl font-black text-slate-900 tracking-tighter mb-4">Transparent Pricing.</h2>
-                        <p className="text-slate-500 max-w-xl mx-auto font-medium mb-8">Equip your talent team with the right tools. Upgrade anytime.</p>
+                        <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tighter mb-4">Transparent Pricing.</h2>
+                        <p className="text-slate-500 max-w-xl mx-auto font-medium mb-8 text-sm">Equip your talent team with the right tools. Upgrade anytime.</p>
                         <div className="inline-flex items-center bg-slate-100 rounded-md p-1 gap-0">
-                            <button 
-                                onClick={() => setBillingCycle('monthly')}
-                                className={`px-5 py-2 rounded text-[10px] font-black uppercase tracking-widest transition-all ${billingCycle === 'monthly' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:text-slate-900'}`}
+                            <button onClick={() => setBillingCycle('monthly')}
+                                className={`px-4 sm:px-5 py-2 rounded text-[10px] font-black uppercase tracking-widest transition-all ${billingCycle === 'monthly' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:text-slate-900'}`}
                             >Monthly</button>
-                            <button 
-                                onClick={() => setBillingCycle('annual')}
-                                className={`px-5 py-2 rounded text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${billingCycle === 'annual' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:text-slate-900'}`}
+                            <button onClick={() => setBillingCycle('annual')}
+                                className={`px-4 sm:px-5 py-2 rounded text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${billingCycle === 'annual' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:text-slate-900'}`}
                             >Annual <span className={`text-[8px] px-1.5 py-0.5 rounded ${billingCycle === 'annual' ? 'bg-emerald-500 text-white' : 'bg-emerald-100 text-emerald-600'}`}>Save 25%</span></button>
                         </div>
                     </motion.div>
 
-                    <div className="grid lg:grid-cols-3 gap-8 items-center max-w-5xl mx-auto">                        {/* Free Tier */}
-                        <motion.div 
-                            className="bg-white rounded-md p-8 border border-slate-200 shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)] hover:shadow-lg transition-all h-[460px] flex flex-col relative group"
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 items-center max-w-5xl mx-auto">                        {/* Free Tier */}
+                        <motion.div
+                            className="bg-white rounded-md p-6 sm:p-8 border border-slate-200 shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)] hover:shadow-lg transition-all flex flex-col relative group"
                             {...fadeInUp}
                         >
                             <div className="mb-6">
@@ -580,29 +490,26 @@ export default function LandingPage() {
                                     <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">/mo</span>
                                 </div>
                             </div>
-                            <ul className="space-y-4 mb-8 flex-1">
-                                <li className="flex items-start gap-3 text-sm font-medium text-slate-600"><CheckCircle className="size-4 text-slate-300 mt-0.5" /> 1 Active Job Posting</li>
-                                <li className="flex items-start gap-3 text-sm font-medium text-slate-600"><CheckCircle className="size-4 text-slate-300 mt-0.5" /> 5 CV Processing Capacity</li>
-                                <li className="flex items-start gap-3 text-sm font-medium text-slate-600"><CheckCircle className="size-4 text-slate-300 mt-0.5" /> Basic Candidate Preview</li>
+                            <ul className="space-y-3 mb-8 flex-1">
+                                <li className="flex items-start gap-3 text-sm font-medium text-slate-600"><CheckCircle className="size-4 text-slate-300 mt-0.5 shrink-0" /> 1 Active Job Posting</li>
+                                <li className="flex items-start gap-3 text-sm font-medium text-slate-600"><CheckCircle className="size-4 text-slate-300 mt-0.5 shrink-0" /> 5 CV Processing Capacity</li>
+                                <li className="flex items-start gap-3 text-sm font-medium text-slate-600"><CheckCircle className="size-4 text-slate-300 mt-0.5 shrink-0" /> Basic Candidate Preview</li>
                                 <li className="flex items-start gap-3 text-sm font-medium text-slate-300 opacity-70 uppercase tracking-widest font-mono text-[9px]"><span className="material-symbols-outlined text-[14px]">block</span> No CRM Analytics</li>
                                 <li className="flex items-start gap-3 text-sm font-medium text-slate-300 opacity-70 uppercase tracking-widest font-mono text-[9px]"><span className="material-symbols-outlined text-[14px]">block</span> Limited Support</li>
                             </ul>
-                            <button className="relative group overflow-hidden w-full h-12 flex items-center justify-center bg-white border border-slate-200 text-slate-900 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all hover:border-slate-900 active:scale-[0.98] shadow-sm hover:shadow-md">
-                                <span className="relative z-10 group-hover:text-white transition-colors duration-300 leading-none">Deploy Starter</span>
-                                <div className="absolute inset-0 bg-slate-950 translate-y-full group-hover:translate-y-0 transition-transform duration-[400ms] ease-[0.23, 1, 0.32, 1]"></div>
-                            </button>
+                            <div className="group relative w-full h-12 flex items-center justify-center bg-white border border-slate-200 rounded text-[10px] font-black uppercase tracking-[0.2em] shadow-sm cursor-default overflow-hidden">
+                                <span className="relative z-10 text-slate-400">Free</span>
+                            </div>
                         </motion.div>
 
                         {/* Medium Tier */}
-                        <motion.div 
-                            className="relative rounded-lg p-8 border border-slate-900/5 bg-white shadow-2xl hover:shadow-[0_40px_80px_-20px_rgba(15,23,42,0.15)] h-[520px] flex flex-col group overflow-hidden transform lg:-translate-y-4 transition-all duration-500"
+                        <motion.div
+                            className="relative rounded-lg p-6 sm:p-8 border border-slate-900/5 bg-white shadow-2xl hover:shadow-[0_40px_80px_-20px_rgba(15,23,42,0.15)] flex flex-col group overflow-hidden sm:col-span-2 lg:col-span-1 lg:-translate-y-4 transition-all duration-500"
                             {...fadeInUp}
                             transition={{ ...fadeInUp.transition, delay: 0.1 }}
                         >
                             <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(248,250,252,0.8)_0%,rgba(255,255,255,1)_50%,rgba(241,245,249,0.8)_100%)] z-0"></div>
-                            
                             <div className="absolute inset-0 -translate-x-[150%] pure-animate-shine bg-gradient-to-r from-transparent via-slate-900/5 to-transparent z-10 pointer-events-none transform skew-x-[12deg]"></div>
-                            
                             <div className="absolute top-0 left-1/2 -translate-x-1/2 px-6 py-1.5 bg-slate-900 rounded-b-md z-20 shadow-xl">
                                 <span className="text-[10px] font-black text-white uppercase tracking-[0.3em]">Professional</span>
                             </div>
@@ -679,7 +586,7 @@ export default function LandingPage() {
                                     setShowPaymentModal(true);
                                     setMessageSent(false);
                                 }}
-                                className="group relative w-full h-12 flex items-center justify-center bg-white border border-slate-200 text-slate-900 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all hover:border-slate-900 overflow-hidden shadow-sm hover:shadow-md active:scale-[0.98]"
+                                className="group relative w-full h-12 flex items-center justify-center bg-white border border-slate-200 text-slate-900 rounded text-[10px] font-black uppercase tracking-[0.2em] transition-all hover:border-slate-900 overflow-hidden shadow-sm hover:shadow-md active:scale-[0.98]"
                             >
                                 <span className="relative z-10 group-hover:text-white transition-colors duration-300 leading-none">Secure Access</span>
                                 <div className="absolute inset-0 bg-slate-950 translate-y-full group-hover:translate-y-0 transition-transform duration-[400ms] ease-[0.23, 1, 0.32, 1]"></div>
@@ -690,11 +597,11 @@ export default function LandingPage() {
             </section>
 
             {/* 6. Process Section */}
-            <section className="py-32 bg-white border-y border-slate-100">
-                <div className="max-w-6xl mx-auto px-6">
-                    <motion.div className="text-center mb-24" {...fadeInUp}>
+            <section className="py-16 md:py-32 bg-white border-y border-slate-100">
+                <div className="max-w-6xl mx-auto px-5">
+                    <motion.div className="text-center mb-12 md:mb-24" {...fadeInUp}>
                         <span className="font-mono text-[10px] text-slate-400 font-bold uppercase tracking-[0.3em] mb-4 block">Workflow Methodology</span>
-                        <h2 className="text-4xl font-black text-slate-900 tracking-tighter">The Arctic Protocol</h2>
+                        <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tighter">The Arctic Protocol</h2>
                     </motion.div>
 
                     <motion.div
@@ -722,13 +629,13 @@ export default function LandingPage() {
             </section>
 
             {/* 7. Feature Mosaic */}
-            <section className="py-24 px-6 max-w-7xl mx-auto">
-                <motion.div className="text-center mb-20" {...fadeInUp}>
+            <section className="py-16 md:py-24 px-5 max-w-7xl mx-auto">
+                <motion.div className="text-center mb-12 md:mb-20" {...fadeInUp}>
                     <span className="font-mono text-[10px] text-slate-400 font-bold uppercase tracking-[0.3em] mb-4 block">Core Capabilities</span>
-                    <h2 className="text-4xl font-black text-slate-900 tracking-tighter">Everything you need to hire at scale.</h2>
+                    <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tighter">Everything you need to hire at scale.</h2>
                 </motion.div>
                 <motion.div
-                    className="grid md:grid-cols-2 lg:grid-cols-4 gap-6"
+                    className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5"
                     variants={staggerContainer}
                     initial="initial"
                     whileInView="whileInView"
@@ -755,14 +662,11 @@ export default function LandingPage() {
             </section>
 
             {/* 8. Candidate Experience */}
-            <motion.section
-                className="py-24 bg-slate-50 border-y border-slate-100"
-                {...fadeInUp}
-            >
-                <div className="max-w-5xl mx-auto px-6 grid md:grid-cols-2 gap-16 items-center">
+            <motion.section className="py-16 md:py-24 bg-slate-50 border-y border-slate-100" {...fadeInUp}>
+                <div className="max-w-5xl mx-auto px-5 grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center">
                     <div className="text-slate-900">
-                        <h2 className="text-4xl font-black mb-6">Designed for those who apply.</h2>
-                        <p className="text-slate-500 text-lg leading-relaxed mb-8">Candidates love the Arctic experience. No more redundant forms—just a single upload and our AI does the rest, providing immediate feedback on their profile strength.</p>
+                        <h2 className="text-2xl sm:text-3xl md:text-4xl font-black mb-5">Designed for those who apply.</h2>
+                        <p className="text-slate-500 text-base leading-relaxed mb-6">Candidates love the Arctic experience. No more redundant forms—just a single upload and our AI does the rest, providing immediate feedback on their profile strength.</p>
                         <ul className="space-y-4">
                             {[
                                 "One-click LinkedIn sync",
@@ -807,9 +711,9 @@ export default function LandingPage() {
             </motion.section>
 
             {/* 8. Arctic Footer */}
-            <footer className="bg-white pt-24 pb-12 px-6 border-t border-slate-100">
+            <footer className="bg-white pt-16 md:pt-24 pb-12 px-5 border-t border-slate-100">
                 <div className="max-w-7xl mx-auto">
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-12 mb-20 text-slate-900">
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 md:gap-12 mb-12 md:mb-20 text-slate-900">
                         <div className="col-span-2 lg:col-span-2">
                             <div className="flex items-center gap-2 mb-6">
                                 <div className="h-12 w-auto">

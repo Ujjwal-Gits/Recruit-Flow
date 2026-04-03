@@ -32,10 +32,25 @@ export default function PricingPage() {
     }, []);
 
     useEffect(() => {
-        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        if (tz && tz.toLowerCase().includes('kathmandu')) {
-            setCurrency('NPR '); setMultiplier(130);
-        }
+        let mounted = true;
+        const detect = async () => {
+            // Pass 1 — timezone (instant, no network)
+            const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            if (tz && (tz === 'Asia/Kathmandu' || tz.toLowerCase().includes('kathmandu'))) {
+                if (mounted) { setCurrency('NPR '); setMultiplier(130); }
+                return;
+            }
+            // Pass 2 — IP geo fallback
+            try {
+                const res = await fetch('https://get.geojs.io/v1/ip/country.json');
+                const data = await res.json();
+                if (mounted && (data.country === 'NP' || data.name === 'Nepal')) {
+                    setCurrency('NPR '); setMultiplier(130);
+                }
+            } catch { /* stay on $ */ }
+        };
+        detect();
+        return () => { mounted = false; };
     }, []);
 
     const handleUpgrade = (planName: string, price: string) => {
@@ -199,20 +214,23 @@ export default function PricingPage() {
                                         ))}
                                     </ul>
 
-                                    <button
-                                        onClick={() => {
-                                            if (plan.name === 'Essential') { window.location.href = '/register'; return; }
-                                            handleUpgrade(plan.name, `${price}${period}`);
-                                        }}
-                                        className={`group relative w-full flex items-center justify-center overflow-hidden rounded text-[10px] font-black uppercase tracking-[0.2em] transition-all active:scale-[0.98] z-20 ${
-                                            plan.highlight
-                                                ? 'h-14 bg-white border border-slate-900/10 text-slate-900 shadow-[0_15px_35px_-12px_rgba(0,0,0,0.08)] hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.2)] hover:border-slate-900 hover:scale-[1.02] duration-500'
-                                                : 'h-12 bg-white border border-slate-200 text-slate-900 shadow-sm hover:shadow-md hover:border-slate-900'
-                                        }`}
-                                    >
-                                        <span className="relative z-10 group-hover:text-white transition-colors duration-300 leading-none">{plan.cta}</span>
-                                        <div className="absolute inset-0 bg-slate-950 translate-y-full group-hover:translate-y-0 transition-transform duration-[400ms] ease-[0.23,_1,_0.32,_1]" />
-                                    </button>
+                                    {plan.name === 'Essential' ? (
+                                        <div className="group relative w-full h-12 flex items-center justify-center overflow-hidden rounded border border-slate-200 text-[10px] font-black uppercase tracking-[0.2em] bg-white cursor-default">
+                                            <span className="relative z-10 text-slate-400">Free</span>
+                                        </div>
+                                    ) : (
+                                        <button
+                                            onClick={() => handleUpgrade(plan.name, `${price}${period}`)}
+                                            className={`group relative w-full flex items-center justify-center overflow-hidden rounded text-[10px] font-black uppercase tracking-[0.2em] transition-all active:scale-[0.98] z-20 ${
+                                                plan.highlight
+                                                    ? 'h-14 bg-white border border-slate-900/10 text-slate-900 shadow-[0_15px_35px_-12px_rgba(0,0,0,0.08)] hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.2)] hover:border-slate-900 hover:scale-[1.02] duration-500'
+                                                    : 'h-12 bg-white border border-slate-200 text-slate-900 shadow-sm hover:shadow-md hover:border-slate-900'
+                                            }`}
+                                        >
+                                            <span className="relative z-10 group-hover:text-white transition-colors duration-300 leading-none">{plan.cta}</span>
+                                            <div className="absolute inset-0 bg-slate-950 translate-y-full group-hover:translate-y-0 transition-transform duration-[400ms] ease-[0.23,_1,_0.32,_1]" />
+                                        </button>
+                                    )}
                                 </motion.div>
                             );
                         })}

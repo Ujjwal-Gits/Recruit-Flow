@@ -15,8 +15,10 @@ export interface Meeting {
     mode: string;
     title: string;
     notes: string;
+    status: string;
     candidate_name: string;
     candidate_email: string;
+    application_id?: string | null;
 }
 
 export interface CRMCandidate {
