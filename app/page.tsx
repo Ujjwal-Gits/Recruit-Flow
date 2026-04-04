@@ -529,10 +529,10 @@ export default function LandingPage() {
                                     <Sparkles className="size-5 text-amber-500" /> Arctic Pro
                                 </h3>
                                 <div className="flex items-baseline gap-1">
-                                    <span className="text-4xl font-black text-slate-900">{currency}{billingCycle === 'monthly' ? (multiplier === 1 ? '6.99' : '499') : (multiplier === 1 ? '64.99' : '4,499')}</span>
+                                    <span className="text-4xl font-black text-slate-900">{currency}{billingCycle === 'monthly' ? (multiplier === 1 ? '6.99' : '299') : (multiplier === 1 ? '64.99' : '2,999')}</span>
                                     <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{billingCycle === 'monthly' ? '/mo' : '/yr'}</span>
                                 </div>
-                                {billingCycle === 'annual' && <p className="text-[10px] text-emerald-600 font-bold mt-1">Save {multiplier === 1 ? '$18.89' : 'NPR 1,489'} vs monthly</p>}
+                                {billingCycle === 'annual' && <p className="text-[10px] text-emerald-600 font-bold mt-1">Save {multiplier === 1 ? '$18.89' : 'NPR 589'} vs monthly</p>}
                             </div>
                             <ul className="space-y-4 mb-8 flex-1 relative z-20">
                                 <li className="flex items-start gap-3 text-sm font-bold text-slate-900"><CheckCircle className="size-4 text-slate-900 mt-0.5" /> 4 Active Job Listings</li>
@@ -547,8 +547,8 @@ export default function LandingPage() {
                                 onClick={() => {
                                     if (!isLoggedIn) { setShowLoginMsg(true); setTimeout(() => setShowLoginMsg(false), 3000); return; }
                                     const price = billingCycle === 'monthly' 
-                                        ? `${currency}${multiplier === 1 ? '6.99' : '499'}/mo`
-                                        : `${currency}${multiplier === 1 ? '64.99' : '4,499'}/yr`;
+                                        ? `${currency}${multiplier === 1 ? '6.99' : '299'}/mo`
+                                        : `${currency}${multiplier === 1 ? '64.99' : '2,999'}/yr`;
                                     setSelectedPlan({ name: 'Arctic Pro', price });
                                     const ref = userEmail ? userEmail.split('@')[0] : 'username';
                                     setPaymentMessage(`Hi, I have completed my payment for Arctic Pro (${price}). My reference name is "${ref}". Please verify and activate my account. Thank you.`);
@@ -571,10 +571,10 @@ export default function LandingPage() {
                             <div className="mb-6">
                                 <h3 className="text-xl font-black text-slate-900 tracking-tight uppercase mb-2">Enterprise</h3>
                                 <div className="flex items-baseline gap-1">
-                                    <span className="text-3xl font-black text-slate-900">{currency}{billingCycle === 'monthly' ? (multiplier === 1 ? '9.99' : '799') : (multiplier === 1 ? '99.99' : '6,499')}</span>
+                                    <span className="text-3xl font-black text-slate-900">{currency}{billingCycle === 'monthly' ? (multiplier === 1 ? '9.99' : '499') : (multiplier === 1 ? '99.99' : '4,599')}</span>
                                     <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{billingCycle === 'monthly' ? '/mo' : '/yr'}</span>
                                 </div>
-                                {billingCycle === 'annual' && <p className="text-[10px] text-emerald-600 font-bold mt-1">Save {multiplier === 1 ? '$19.89' : 'NPR 3,089'} vs monthly</p>}
+                                {billingCycle === 'annual' && <p className="text-[10px] text-emerald-600 font-bold mt-1">Save {multiplier === 1 ? '$19.89' : 'NPR 1,389'} vs monthly</p>}
                             </div>
                             <ul className="space-y-4 mb-8 flex-1">
                                 <li className="flex items-start gap-3 text-sm font-bold text-slate-900"><CheckCircle className="size-4 text-slate-900 mt-0.5" /> 10 Active Listings</li>
@@ -588,8 +588,8 @@ export default function LandingPage() {
                                 onClick={() => {
                                     if (!isLoggedIn) { setShowLoginMsg(true); setTimeout(() => setShowLoginMsg(false), 3000); return; }
                                     const price = billingCycle === 'monthly'
-                                        ? `${currency}${multiplier === 1 ? '9.99' : '799'}/mo`
-                                        : `${currency}${multiplier === 1 ? '99.99' : '6,499'}/yr`;
+                                        ? `${currency}${multiplier === 1 ? '9.99' : '499'}/mo`
+                                        : `${currency}${multiplier === 1 ? '99.99' : '4,599'}/yr`;
                                     setSelectedPlan({ name: 'Enterprise', price });
                                     const ref = userEmail ? userEmail.split('@')[0] : 'username';
                                     setPaymentMessage(`Hi, I have completed my payment for Enterprise (${price}). My reference name is "${ref}". Please verify and activate my account. Thank you.`);
@@ -675,13 +675,13 @@ export default function LandingPage() {
             <motion.section className="py-16 md:py-24 bg-slate-50 border-y border-slate-100" {...fadeInUp}>
                 <div className="max-w-5xl mx-auto px-5 grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center">
                     <div className="text-slate-900">
-                        <h2 className="text-2xl sm:text-3xl md:text-4xl font-black mb-5">Designed for those who apply.</h2>
-                        <p className="text-slate-500 text-base leading-relaxed mb-6">Candidates love the Arctic experience. No more redundant forms—just a single upload and our AI does the rest, providing immediate feedback on their profile strength.</p>
+                        <h2 className="text-2xl sm:text-3xl md:text-4xl font-black mb-5">Simple to apply. Fast to review.</h2>
+                        <p className="text-slate-500 text-base leading-relaxed mb-6">Candidates submit their resume and profile links through a clean, single-page form. Our AI instantly analyzes the submission and generates a structured summary and ATS score — so recruiters can make faster, better-informed decisions.</p>
                         <ul className="space-y-4">
                             {[
-                                "One-click LinkedIn sync",
-                                "Real-time application tracking",
-                                "Personalized skill gap insights"
+                                "Submit resume via a simple public link",
+                                "AI generates ATS score and profile summary",
+                                "Recruiter reviews a structured candidate flipbook"
                             ].map((item, i) => (
                                 <li key={i} className="flex items-center gap-3 font-semibold text-slate-700">
                                     <CheckCircle className="size-5 text-slate-900" />
@@ -692,19 +692,19 @@ export default function LandingPage() {
                     </div>
                     <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-xl overflow-hidden relative">
                         <div className="mb-10 text-center text-slate-900">
-                            <h4 className="font-bold">Join the Arctic Design Team</h4>
-                            <p className="text-xs text-slate-400 capitalize font-mono">Senior UI/UX Designer • Remote</p>
+                            <h4 className="font-bold">Software Engineer — Kathmandu</h4>
+                            <p className="text-xs text-slate-400 capitalize font-mono">Full Stack Developer • On-Site</p>
                         </div>
                         <div className="border-2 border-dashed border-slate-100 rounded-xl p-10 flex flex-col items-center justify-center bg-slate-50/30">
                             <div className="size-12 rounded-lg bg-slate-100 flex items-center justify-center mb-4">
-                                <span className="material-symbols-outlined text-slate-400">upload_file</span>
+                                <span className="material-symbols-outlined text-slate-400">description</span>
                             </div>
-                            <div className="text-sm font-bold mb-1 text-slate-800 text-center">Drag & Drop Resume</div>
-                            <div className="text-[10px] text-slate-400 font-mono uppercase text-center">PDF, DOCX (Max. 10MB)</div>
+                            <div className="text-sm font-bold mb-1 text-slate-800 text-center">Upload Your Resume</div>
+                            <div className="text-[10px] text-slate-400 font-mono uppercase text-center">PDF only (Max. 10MB)</div>
                         </div>
                         <div className="mt-8 space-y-3">
                             <div className="flex items-center justify-between text-[10px] font-mono font-medium">
-                                <span className="text-slate-400 uppercase tracking-tighter">AI Analyzing Profile...</span>
+                                <span className="text-slate-400 uppercase tracking-tighter">AI Processing Resume...</span>
                                 <span className="text-slate-900">75%</span>
                             </div>
                             <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">

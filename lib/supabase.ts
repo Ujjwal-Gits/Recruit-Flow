@@ -3,7 +3,18 @@ import { createBrowserClient } from '@supabase/ssr';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-// Browser client using @supabase/ssr — stores session in cookies
-// so that middleware and API routes can verify the session server-side.
-// This is a DROP-IN replacement for the old createClient() call.
-export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
+// Fix Safari/iOS ITP logout: explicit SameSite + Secure + maxAge
+// Do NOT set a custom cookie name — it breaks Supabase OAuth PKCE flow
+export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
+    cookieOptions: {
+        sameSite: 'lax',
+        secure: false, // must be false in dev (localhost is not HTTPS); Supabase handles this in prod
+        maxAge: 60 * 60 * 24 * 7,
+        path: '/',
+    },
+    auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+    }
+});

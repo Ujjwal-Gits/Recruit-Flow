@@ -2,13 +2,17 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { NextResponse } from 'next/server';
 import { getAuthenticatedUser, unauthorizedResponse, serverErrorResponse } from '@/lib/auth-guard';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
     try {
         const auth = await getAuthenticatedUser();
         if (!auth) return unauthorizedResponse();
 
-        // The profile is now automatically fetched and cached by getAuthenticatedUser()
-        return NextResponse.json({ profile: auth.profile || null });
+        const response = NextResponse.json({ profile: auth.profile || null });
+        // Cache for 30s — profile rarely changes, avoids refetch on every page navigation
+        response.headers.set('Cache-Control', 'private, max-age=30, stale-while-revalidate=60');
+        return response;
     } catch (error: any) {
         return serverErrorResponse();
     }

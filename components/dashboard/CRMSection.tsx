@@ -23,7 +23,7 @@ const CRMCandidateRow = memo(({ c, user, setPreviewUrl, setMailTarget, statusCol
             </td>
             <td className="px-6 py-4 text-xs text-slate-500 font-medium">{c.email}</td>
             <td className="px-6 py-4">
-                <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded border border-slate-100">{c.job_title}</span>
+                <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded border border-slate-100 whitespace-nowrap block max-w-[120px] truncate" title={c.job_title}>{c.job_title}</span>
             </td>
             <td className="px-6 py-4 text-sm font-black text-slate-900">{c.ats_score}%</td>
             <td className="px-6 py-4">
@@ -58,9 +58,9 @@ const CRMCandidateRow = memo(({ c, user, setPreviewUrl, setMailTarget, statusCol
 });
 CRMCandidateRow.displayName = 'CRMCandidateRow';
 
-export default function CRMSection({ user, mailSettings }: { user: any, mailSettings: any }) {
-    const [candidates, setCandidates] = useState<CRMCandidate[]>([]);
-    const [loadingCandidates, setLoadingCandidates] = useState(true);
+export default function CRMSection({ user, mailSettings, initialCandidates }: { user: any, mailSettings: any, initialCandidates?: CRMCandidate[] }) {
+    const [candidates, setCandidates] = useState<CRMCandidate[]>(initialCandidates || []);
+    const [loadingCandidates, setLoadingCandidates] = useState(!initialCandidates || initialCandidates.length === 0);
     const [crmFilter, setCrmFilter] = useState<'all' | 'accepted' | 'rejected' | 'pending'>('all');
     const [crmSearch, setCrmSearch] = useState('');
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -116,6 +116,12 @@ export default function CRMSection({ user, mailSettings }: { user: any, mailSett
     }, [previewUrl, mailTarget]);
 
     useEffect(() => {
+        // Only fetch if no initial data was provided from parent
+        if (initialCandidates && initialCandidates.length >= 0) {
+            setCandidates(initialCandidates);
+            setLoadingCandidates(false);
+            return;
+        }
         if (user?.id) fetchCandidates(user.id);
     }, [user?.id]);
 

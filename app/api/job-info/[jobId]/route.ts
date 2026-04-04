@@ -9,6 +9,7 @@ export async function GET(
 ) {
     try {
         const { jobId } = await params;
+
         const { data: job, error } = await supabaseAdmin
             .from('jobs')
             .select('title, company_name, description, user_id, created_at')
@@ -16,58 +17,41 @@ export async function GET(
             .single();
 
         if (error || !job) {
-             return NextResponse.json({
-                job: {
-                    title: 'Open Position',
-                    company_name: 'Company',
-                    description: 'Apply for this position.',
-                    logo_url: null
-                }
+            return NextResponse.json({
+                job: { title: 'Open Position', company_name: 'Company', description: '', logo_url: null },
+                isClosed: false
             });
         }
 
-        // TIER LIMIT ENFORCEMENT for CV Processing
-        const { data: profile } = await supabaseAdmin
-            .from('profiles')
-            .select('logo_url, tier')
-            .eq('id', job.user_id)
-            .single();
+        // Fetch profile and application count in parallel
+        const [profileResult, countResult] = await Promise.all([
+            supabaseAdmin.from('profiles').select('logo_url, tier').eq('id', job.user_id).single(),
+            supabaseAdmin.from('applications').select('*', { count: 'exact', head: true }).eq('job_id', jobId),
+        ]);
 
-        const tier = profile?.tier || 'essential';
+        const tier = profileResult.data?.tier || 'essential';
         const capacityLimit = tier === 'enterprise' ? 200 : (tier === 'pro' ? 30 : 5);
+        const appCount = countResult.count || 0;
 
-        // Fetch user's job IDs to check total applications across all jobs
-        const { data: userJobs } = await supabaseAdmin.from('jobs').select('id').eq('user_id', job.user_id);
-        const jobIds = userJobs?.map((j: any) => j.id) || [];
-        
-        let appCount = 0;
-        if (jobIds.length > 0) {
-            const { count } = await supabaseAdmin
-                .from('applications')
-                .select('*', { count: 'exact', head: true })
-                .in('job_id', jobIds);
-            appCount = count || 0;
-        }
-
-        const isClosed = appCount >= capacityLimit;
-
-        return NextResponse.json({ 
+        const response = NextResponse.json({
             job: {
-                ...job,
-                logo_url: profile?.logo_url
+                title: job.title,
+                company_name: job.company_name,
+                description: job.description,
+                created_at: job.created_at,
+                logo_url: profileResult.data?.logo_url || null,
             },
-            isClosed,
+            isClosed: appCount >= capacityLimit,
             appCount,
-            capacityLimit
-         });
-    } catch (err: any) {
+            capacityLimit,
+        });
+
+        response.headers.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=120');
+        return response;
+    } catch {
         return NextResponse.json({
-            job: {
-                title: 'Open Position',
-                company_name: 'Company',
-                description: 'Apply for this position.',
-                logo_url: null
-            }
+            job: { title: 'Open Position', company_name: 'Company', description: '', logo_url: null },
+            isClosed: false
         });
     }
 }

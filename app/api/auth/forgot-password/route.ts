@@ -25,9 +25,13 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Invalid email address.' }, { status: 400, headers });
         }
 
-        // ── Check if user exists ──
-        const { data: { users: existingUsers } } = await supabaseAdmin.auth.admin.listUsers() as any;
-        const userExists = (existingUsers as any[])?.some((u: any) => u.email === email);
+        // Check if user exists via profiles table — fast direct lookup
+        const { data: userByEmail } = await supabaseAdmin
+            .from('profiles')
+            .select('id')
+            .eq('email', email)
+            .single();
+        const userExists = !!userByEmail;
 
         if (userExists) {
             // User exists — generate OTP

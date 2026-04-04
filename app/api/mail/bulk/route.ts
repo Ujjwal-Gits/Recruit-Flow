@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { sendEmail } from '@/lib/email';
 import { getAuthenticatedUser, unauthorizedResponse } from '@/lib/auth-guard';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: Request) {
     try {
         const auth = await getAuthenticatedUser();

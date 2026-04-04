@@ -2,6 +2,8 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { NextResponse } from 'next/server';
 import { getAuthenticatedUser, unauthorizedResponse, serverErrorResponse } from '@/lib/auth-guard';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
     try {
         const auth = await getAuthenticatedUser();
@@ -21,7 +23,8 @@ export async function GET() {
         }
 
         const response = NextResponse.json({ jobs: jobs || [] });
-        response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+        // Cache for 15s — jobs list changes infrequently, avoids refetch on tab switch
+        response.headers.set('Cache-Control', 'private, max-age=15, stale-while-revalidate=30');
         return response;
 
     } catch (error: any) {

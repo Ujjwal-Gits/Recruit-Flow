@@ -25,7 +25,7 @@ export default function ApplyPageClient({ jobId }: { jobId: string }) {
     const [job, setJob] = useState<JobInfo | null>(null);
     const [isClosed, setIsClosed] = useState(false);
     const [loading, setLoading] = useState(true);
-    const [parsedJob, setParsedJob] = useState<{ text: string, workMode: string, deadline: string, links: any[] }>({ text: '', workMode: 'Remote / Global', deadline: '', links: [] });
+    const [parsedJob, setParsedJob] = useState<{ text: string, workMode: string, deadline: string, jobType: string, education: string, experience: string[], links: any[] }>({ text: '', workMode: 'Remote / Global', deadline: '', jobType: 'Full-time', education: '', experience: [], links: [] });
 
     useEffect(() => {
         fetch(`/api/job-info/${jobId}`)
@@ -36,6 +36,9 @@ export default function ApplyPageClient({ jobId }: { jobId: string }) {
                 let text = data.job?.description || '';
                 let workMode = 'Remote / Global';
                 let deadline = '';
+                let jobType = 'Full-time';
+                let education = '';
+                let experience: string[] = [];
                 let links: any[] = [];
                 try {
                     const parsed = JSON.parse(text);
@@ -43,10 +46,13 @@ export default function ApplyPageClient({ jobId }: { jobId: string }) {
                         text = parsed.text;
                         workMode = parsed.workMode || workMode;
                         deadline = parsed.deadline || '';
+                        jobType = parsed.jobType || 'Full-time';
+                        education = parsed.education || '';
+                        experience = parsed.experience || [];
                         links = parsed.links || [];
                     }
                 } catch (e) {}
-                setParsedJob({ text, workMode, deadline, links });
+                setParsedJob({ text, workMode, deadline, jobType, education, experience, links });
             })
             .catch(() => setJob({ title: 'Open Position', company_name: 'Company', description: '' }))
             .finally(() => setLoading(false));
@@ -101,25 +107,60 @@ export default function ApplyPageClient({ jobId }: { jobId: string }) {
                     </div>
 
                     <div className="bg-white border border-slate-100 p-8 rounded shadow-sm">
-                        <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-6">Execution Narrative</h3>
-                        <p className="text-slate-600 leading-relaxed font-medium whitespace-pre-wrap">
-                            {parsedJob.text || "In this role, you will be part of a high-fidelity execution squad, leveraging mission-critical infrastructure to drive recruitment intelligence. We value precision, speed, and cross-functional synergy."}
-                        </p>
+                        <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-6">About This Role</h3>
+                        <div className="text-slate-600 leading-relaxed font-medium space-y-3">
+                            {(parsedJob.text || "We're looking for someone to join our team and help us build great things.").split('\n').map((line, i) => {
+                                const trimmed = line.trim();
+                                if (!trimmed) return null;
+                                // Render **bold** headers — entire line is wrapped in **
+                                const isBoldHeader = trimmed.startsWith('**') && trimmed.endsWith('**') && trimmed.length > 4;
+                                if (isBoldHeader) {
+                                    return <p key={i} className="font-black text-slate-900 text-sm uppercase tracking-wide mt-5 first:mt-0">{trimmed.replace(/\*\*/g, '')}</p>;
+                                }
+                                // Render bullet points
+                                if (trimmed.startsWith('•') || trimmed.startsWith('-')) {
+                                    return <p key={i} className="flex gap-2 text-sm"><span className="text-slate-400 shrink-0">•</span><span>{trimmed.replace(/^[•\-]\s*/, '')}</span></p>;
+                                }
+                                // Inline **bold** within text
+                                const parts = trimmed.split(/\*\*(.*?)\*\*/g);
+                                return (
+                                    <p key={i} className="text-sm">
+                                        {parts.map((part, j) => j % 2 === 1 ? <strong key={j} className="font-bold text-slate-900">{part}</strong> : part)}
+                                    </p>
+                                );
+                            })}
+                        </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-2 gap-4">
                         <div className="bg-white border border-slate-100 p-6 rounded shadow-sm">
                             <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Location</h4>
                             <p className="text-sm font-bold text-slate-900 leading-tight">{parsedJob.workMode || 'Global / Remote'}</p>
                         </div>
                         <div className="bg-white border border-slate-100 p-6 rounded shadow-sm">
-                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Start Date</h4>
+                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Job Type</h4>
+                            <p className="text-sm font-bold text-slate-900 leading-tight">{parsedJob.jobType || 'Full-time'}</p>
+                        </div>
+                        {parsedJob.education && (
+                            <div className="bg-white border border-slate-100 p-6 rounded shadow-sm">
+                                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Min. Education</h4>
+                                <p className="text-sm font-bold text-slate-900 leading-tight">{parsedJob.education}</p>
+                            </div>
+                        )}
+                        {parsedJob.experience?.length > 0 && (
+                            <div className="bg-white border border-slate-100 p-6 rounded shadow-sm">
+                                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Experience</h4>
+                                <p className="text-sm font-bold text-slate-900 leading-tight">{parsedJob.experience.join(' / ')}</p>
+                            </div>
+                        )}
+                        <div className="bg-white border border-slate-100 p-6 rounded shadow-sm">
+                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Posted</h4>
                             <p className="text-sm font-bold text-slate-900 leading-tight">
                                 {job?.created_at ? new Date(job.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'ASAP'}
                             </p>
                         </div>
                         <div className="bg-white border border-slate-100 p-6 rounded shadow-sm">
-                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">End Date</h4>
+                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Deadline</h4>
                             <p className="text-sm font-bold text-slate-900 leading-tight">
                                 {parsedJob.deadline ? new Date(parsedJob.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Ongoing'}
                             </p>

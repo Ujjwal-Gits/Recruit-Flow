@@ -22,7 +22,7 @@ export async function POST(request: Request) {
         const { email: rawEmail, code, newPassword, confirmPassword } = body;
         const email = sanitizeEmail(rawEmail || '');
 
-        if (!code || code.length !== 5) {
+        if (!code || code.length !== 6) {
             return NextResponse.json({ error: 'Invalid reset code.' }, { status: 400, headers });
         }
 
@@ -58,16 +58,19 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Too many invalid attempts.' }, { status: 429, headers });
         }
 
-        // ── Find the user and update password ──
-        const { data: { users } } = await supabaseAdmin.auth.admin.listUsers() as any;
-        const user = (users as any[])?.find((u: any) => u.email === email);
+        // Find user via profiles table — avoids fetching all users with listUsers()
+        const { data: profileRecord } = await supabaseAdmin
+            .from('profiles')
+            .select('id')
+            .eq('email', email)
+            .single();
 
-        if (!user) {
+        if (!profileRecord) {
             return NextResponse.json({ error: 'Account not found.' }, { status: 404, headers });
         }
 
         const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
-            user.id,
+            profileRecord.id,
             { password: newPassword }
         );
 

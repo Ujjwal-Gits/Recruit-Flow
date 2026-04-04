@@ -14,14 +14,8 @@ export async function GET(req: NextRequest) {
         const { searchParams } = new URL(req.url);
         const jobId = searchParams.get('jobId');
 
-        // Identity & Tier Verification
-        const { data: profile } = await supabaseAdmin
-            .from('profiles')
-            .select('tier')
-            .eq('id', userId)
-            .single();
-
-        const isEnterprise = profile?.tier === 'enterprise';
+        // Tier is already in auth — no need for a second DB query
+        const isEnterprise = auth.tier === 'enterprise';
 
         if (!isEnterprise) {
             return forbiddenResponse('Enterprise subscription required for bulk PDF aggregation.');

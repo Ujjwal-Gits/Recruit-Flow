@@ -19,23 +19,26 @@ export async function GET() {
             return forbiddenResponse('Admin access required.');
         }
 
-        // 4. Fetch all data in PARALLEL — single biggest perf win
+        // Fetch all data in PARALLEL — only select columns we actually use
         const role = auth.role;
         
         const [usersCount, listingsCount, transResult, messagesResult, usersResult] = await Promise.all([
             supabaseAdmin.from('profiles').select('*', { count: 'exact', head: true }),
             supabaseAdmin.from('jobs').select('*', { count: 'exact', head: true }),
             role === 'owner' 
-                ? supabaseAdmin.from('transactions').select('id, amount, created_at, currency, status, plan, purchaser, company, activated_by, duration')
+                ? supabaseAdmin.from('transactions')
+                    .select('id, invoice_ref, amount, created_at, currency, status, plan, purchaser, company, activated_by, duration')
+                    .order('created_at', { ascending: false })
+                    .limit(200)
                 : Promise.resolve({ data: null }),
             supabaseAdmin.from('support_messages')
-                .select('*')
+                .select('id, user_id, sender_id, sender, message_text, subject, created_at, image_url')
                 .order('created_at', { ascending: false })
-                .limit(100),
+                .limit(50),
             supabaseAdmin.from('profiles')
                 .select('id, email, full_name, tier, role, company_name, updated_at, subscription_expiry')
                 .order('updated_at', { ascending: false })
-                .limit(role === 'owner' ? 100 : 20),
+                .limit(role === 'owner' ? 50 : 20),
         ]);
 
         const totalUsers = usersCount.count || 0;
@@ -170,7 +173,7 @@ export async function GET() {
             closedChats: closedSupportChats,
             upgrades: upgradeRequests,
             invoices: role === 'owner' ? (transResult.data || []).map((t: any) => ({
-                id: t.id,
+                id: t.invoice_ref || t.id,
                 plan: t.plan || 'Subscription',
                 purchaser: t.purchaser || '',
                 company: t.company || '—',
@@ -220,9 +223,8 @@ export async function POST(req: Request) {
         }
 
         if (action === 'create-invoice' && invoice) {
-            // Try full insert first; fall back to minimal if columns don't exist
             const { error } = await supabaseAdmin.from('transactions').insert({
-                id: invoice.id,
+                invoice_ref: invoice.id,        // custom INV-XXXXX stored separately
                 amount: invoice.amount,
                 currency: invoice.currency,
                 status: invoice.status,
@@ -234,17 +236,14 @@ export async function POST(req: Request) {
                 created_at: invoice.date,
             });
             if (error) {
-                // Fallback: only insert columns that definitely exist
-                await supabaseAdmin.from('transactions').insert({
-                    amount: invoice.amount,
-                    currency: invoice.currency,
-                });
+                console.error('Invoice insert error:', error.message);
             }
             return NextResponse.json({ success: true });
         }
 
         if (action === 'cancel-invoice' && invoiceId) {
-            await supabaseAdmin.from('transactions').update({ status: 'Cancelled' }).eq('id', invoiceId);
+            // invoiceId is the INV-XXXXX ref, match against invoice_ref column
+            await supabaseAdmin.from('transactions').update({ status: 'Cancelled' }).eq('invoice_ref', invoiceId);
             return NextResponse.json({ success: true });
         }
 

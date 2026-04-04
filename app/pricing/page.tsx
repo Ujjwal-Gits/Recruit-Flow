@@ -76,9 +76,9 @@ export default function PricingPage() {
         },
         {
             name: "Arctic Pro",
-            monthlyUsd: "6.99", monthlyNpr: "499",
-            annualUsd: "64.99", annualNpr: "4,499",
-            savingsUsd: "$18.89", savingsNpr: "NPR 1,489",
+            monthlyUsd: "6.99", monthlyNpr: "299",
+            annualUsd: "64.99", annualNpr: "2,999",
+            savingsUsd: "$18.89", savingsNpr: "NPR 589",
             features: [
                 { text: "4 Active Job Listings", included: true },
                 { text: "30 CV Processing Capacity", included: true },
@@ -93,9 +93,9 @@ export default function PricingPage() {
         },
         {
             name: "Enterprise",
-            monthlyUsd: "9.99", monthlyNpr: "799",
-            annualUsd: "99.99", annualNpr: "6,499",
-            savingsUsd: "$19.89", savingsNpr: "NPR 3,089",
+            monthlyUsd: "9.99", monthlyNpr: "499",
+            annualUsd: "99.99", annualNpr: "4,599",
+            savingsUsd: "$19.89", savingsNpr: "NPR 1,389",
             features: [
                 { text: "10 Active Listings", included: true },
                 { text: "200 CV Processing Capacity", included: true },

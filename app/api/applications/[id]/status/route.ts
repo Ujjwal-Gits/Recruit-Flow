@@ -2,6 +2,8 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { NextResponse } from 'next/server';
 import { getAuthenticatedUser, unauthorizedResponse, forbiddenResponse, serverErrorResponse } from '@/lib/auth-guard';
 
+export const dynamic = 'force-dynamic';
+
 export async function PATCH(
     req: Request,
     { params }: { params: Promise<{ id: string }> }

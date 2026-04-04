@@ -11,7 +11,7 @@ export default function ForgotPasswordPage() {
     const [step, setStep] = useState<"email" | "otp" | "reset">("email");
 
     const [email, setEmail] = useState("");
-    const [otp, setOtp] = useState(["", "", "", "", ""]);
+    const [otp, setOtp] = useState(["", "", "", "", "", ""]);
     const [otpDebug, setOtpDebug] = useState("");
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
@@ -69,8 +69,8 @@ export default function ForgotPasswordPage() {
     // ── Step 2: Verify OTP → go to reset form ──
     const handleVerifyCode = () => {
         const code = otp.join("");
-        if (code.length !== 5) {
-            setError("Enter the full 5-digit code.");
+        if (code.length !== 6) {
+            setError("Enter the full 6-digit code.");
             return;
         }
         setError("");
@@ -115,7 +115,7 @@ export default function ForgotPasswordPage() {
         const newOtp = [...otp];
         newOtp[index] = value;
         setOtp(newOtp);
-        if (value && index < 4) inputRefs.current[index + 1]?.focus();
+        if (value && index < 5) inputRefs.current[index + 1]?.focus();
     };
 
     const handleOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
@@ -243,7 +243,7 @@ export default function ForgotPasswordPage() {
                                 Continue <ArrowRight className="size-3.5" />
                             </button>
 
-                            <button onClick={() => { setStep("email"); setError(""); setOtp(["", "", "", "", ""]); }}
+                            <button onClick={() => { setStep("email"); setError(""); setOtp(["", "", "", "", "", ""]); }}
                                 className="w-full mt-4 text-xs text-slate-400 font-bold hover:text-slate-900 transition-colors">
                                 ← Back
                             </button>

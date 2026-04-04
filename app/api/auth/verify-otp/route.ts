@@ -58,10 +58,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: `Invalid code. ${5 - newAttempts} attempts remaining.` }, { status: 401, headers });
         }
 
-        // Mark as used immediately to prevent replay
-        await supabaseAdmin.from('verification_codes').update({ used: true }).eq('id', codeRecord.id);
-
-        // 2. Create standard user in Auth
+        // 2. Create standard user in Auth FIRST
         const { data: authData, error: createError } = await supabaseAdmin.auth.admin.createUser({
             email,
             password,
@@ -70,8 +67,12 @@ export async function POST(request: Request) {
         });
 
         if (createError) {
+            // Don't consume OTP if user creation failed — let them retry
             return NextResponse.json({ error: 'Registration failed.' }, { status: 500, headers });
         }
+
+        // Mark as used AFTER successful user creation to prevent OTP being wasted on failure
+        await supabaseAdmin.from('verification_codes').update({ used: true }).eq('id', codeRecord.id);
 
         const userId = authData.user.id;
 

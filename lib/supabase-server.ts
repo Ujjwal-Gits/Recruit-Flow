@@ -1,13 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
-/**
- * Creates a Supabase client for use in API Route Handlers (App Router).
- * Reads the user's session from cookies — this is how we know WHO is calling the API.
- * 
- * This uses the ANON KEY (not service role), so RLS policies apply.
- * For admin operations that bypass RLS, continue using supabaseAdmin from supabase-admin.ts
- */
 export async function createRouteClient() {
     const cookieStore = await cookies();
 
@@ -15,6 +8,12 @@ export async function createRouteClient() {
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         {
+            cookieOptions: {
+                sameSite: 'lax',
+                secure: false,
+                maxAge: 60 * 60 * 24 * 7,
+                path: '/',
+            },
             cookies: {
                 getAll() {
                     return cookieStore.getAll();
@@ -25,7 +24,7 @@ export async function createRouteClient() {
                             cookieStore.set(name, value, options)
                         );
                     } catch {
-                        // Ignore — setAll can fail in read-only contexts (middleware)
+                        // Ignore — setAll can fail in read-only contexts
                     }
                 },
             },

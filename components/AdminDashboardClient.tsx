@@ -62,7 +62,18 @@ export default function AdminDashboardClient() {
     const [authLoading, setAuthLoading] = useState(true);
     const [accessVerified, setAccessVerified] = useState(false);
     const [accessDenied, setAccessDenied] = useState(false);
-    const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'staff' | 'history' | 'messages' | 'upgrades' | 'billing'>('overview');
+    const hasRestoredTab = useRef(false);
+    
+    // Persist active tab in localStorage to prevent reset on refresh
+    const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'staff' | 'history' | 'messages' | 'upgrades' | 'billing'>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('adminActiveTab');
+            console.log('Loading activeTab from localStorage:', saved);
+            return (saved as any) || 'overview';
+        }
+        return 'overview';
+    });
+    
     const [searchQuery, setSearchQuery] = useState('');
     const [tierFilter, setTierFilter] = useState<'all' | 'essential' | 'pro' | 'enterprise'>('all');
     const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
@@ -119,17 +130,30 @@ export default function AdminDashboardClient() {
     const [invoices, setInvoices] = useState<any[]>([]);
 
     // ── Live Action Log ──────────────────────────────────────────────────────
-    const [actionLog, setActionLog] = useState<{ id: number; action: string; target: string; author: string; role: string; time: string; ts: number }[]>([]);
+    const [actionLog, setActionLog] = useState<{ id: number; action: string; target: string; author: string; role: string; time: string; ts: number }[]>(() => {
+        if (typeof window !== 'undefined') {
+            try {
+                const saved = localStorage.getItem('adminActionLog');
+                return saved ? JSON.parse(saved) : [];
+            } catch { return []; }
+        }
+        return [];
+    });
+
     const logAction = (action: string, target: string) => {
-        setActionLog(prev => [{
-            id: Date.now(),
-            action,
-            target,
-            author: user?.email || 'Admin',
-            role: user?.role || 'admin',
-            time: new Date().toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }),
-            ts: Date.now(),
-        }, ...prev].slice(0, 100)); // keep last 100
+        setActionLog(prev => {
+            const next = [{
+                id: Date.now(),
+                action,
+                target,
+                author: user?.email || 'Admin',
+                role: user?.role || 'admin',
+                time: new Date().toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }),
+                ts: Date.now(),
+            }, ...prev].slice(0, 100);
+            try { localStorage.setItem('adminActionLog', JSON.stringify(next)); } catch {}
+            return next;
+        });
     };
 
     // Activation Hub Menu States
@@ -306,11 +330,12 @@ export default function AdminDashboardClient() {
             })
             .subscribe();
 
-        // Fallback polling (every 3s instead of 10s) for high reliability if real-time is disabled 
+        // Fallback polling (every 30s) for high reliability if real-time fails
+        // Reduced from 3s to 30s to improve performance
         const interval = setInterval(() => {
             fetchSupportChats();
             fetchUpgrades();
-        }, 3000);
+        }, 30000);
 
         return () => {
             supabase.removeChannel(channel);
@@ -328,6 +353,14 @@ export default function AdminDashboardClient() {
             }
         }
     }, [selectedChatId, supportChats, closedChats, supportTicketTab]);
+
+    // Persist active tab to localStorage whenever it changes
+    useEffect(() => {
+        if (typeof window !== 'undefined' && activeTab) {
+            console.log('Saving activeTab to localStorage:', activeTab);
+            localStorage.setItem('adminActiveTab', activeTab);
+        }
+    }, [activeTab]);
 
     const [upgradeFilter, setUpgradeFilter] = useState<'ALL' | 'ARCTIC' | 'ENTERPRISE'>('ALL');
 
@@ -516,39 +549,53 @@ export default function AdminDashboardClient() {
     useEffect(() => {
         const checkAdminAuth = async () => {
             try {
-                const { data: { session } } = await supabase.auth.getSession();
-                if (!session) {
+                // Single source of truth: server-side role verify
+                // Don't use getSession() — it can return null briefly on refresh
+                // while cookies are being rehydrated, causing false redirects
+                const verifyRes = await fetch('/api/iamadmin/verify');
+                const verifyData = await verifyRes.json();
+
+                if (!verifyRes.ok || !verifyData.role || !['owner', 'manager', 'support', 'admin'].includes(verifyData.role)) {
+                    if (verifyRes.status === 401) {
+                        router.push('/login');
+                    } else {
+                        router.push('/dashboard');
+                    }
                     setAccessDenied(true);
-                    setAuthLoading(false);
-                    router.push('/login');
                     return;
                 }
 
+                // Set user from verify data — no extra getSession() call needed
+                setUser({ id: verifyData.id, email: verifyData.email, role: verifyData.role });
+                setAccessVerified(true);
+
+                // Restore saved tab based on permissions
+                const savedTab = localStorage.getItem('adminActiveTab') as any;
+                const isOwnerOrAdmin = verifyData.role === 'owner' || verifyData.role === 'admin';
+                const isSupport = verifyData.role === 'support';
+
+                if (!hasRestoredTab.current) {
+                    let targetTab = savedTab || 'overview';
+                    if (targetTab === 'overview' && !isOwnerOrAdmin) targetTab = 'users';
+                    else if (targetTab === 'history' && !isOwnerOrAdmin) targetTab = 'users';
+                    else if ((targetTab === 'staff' || targetTab === 'billing') && isSupport) targetTab = 'users';
+                    setActiveTab(targetTab);
+                    localStorage.setItem('adminActiveTab', targetTab);
+                    hasRestoredTab.current = true;
+                }
+
+                // Load heavy data in background after nav is already visible
                 const res = await fetch('/api/iamadmin');
                 const data = await res.json();
-
-                if (res.status === 401 || res.status === 403 || data.error || !data.role || !['owner', 'manager', 'support', 'admin'].includes(data.role)) {
-                    setAccessDenied(true);
-                    setAuthLoading(false);
-                    router.push('/dashboard');
-                    return;
+                if (res.ok && !data.error) {
+                    setStats(data.stats);
+                    setAllUsers(data.users || []);
+                    setSupportChats(data.chats || []);
+                    setUpgradeRequests(data.upgrades || []);
+                    setRevenueData(data.stats?.revenueHistory || []);
+                    if (data.invoices?.length) setInvoices(data.invoices);
                 }
 
-                // ONLY set accessVerified=true after server confirms admin role
-                setUser({ ...session.user, role: data.role });
-                setStats(data.stats);
-                setAllUsers(data.users || []);
-                setSupportChats(data.chats || []);
-                setUpgradeRequests(data.upgrades || []);
-                setRevenueData(data.stats?.revenueHistory || []);
-                if (data.invoices?.length) setInvoices(data.invoices);
-                
-                // If not owner, change default tab to users since overview is restricted
-                if (data.role !== 'owner') {
-                    setActiveTab('users');
-                }
-                
-                setAccessVerified(true);
             } catch (err) {
                 console.error('Admin auth check fatal error:', err);
                 setAccessDenied(true);
@@ -643,18 +690,19 @@ export default function AdminDashboardClient() {
                 // Auto-generate invoice when a tier upgrade is performed
                 if (updates.newTier && (updates.newTier === 'pro' || updates.newTier === 'enterprise')) {
                     const targetUser = allUsers.find(u => u.id === targetId);
-                    const tierPrices: Record<string, { npr: number; usd: number; label: string }> = {
-                        pro: { npr: 499, usd: 6.99, label: 'Arctic Pro' },
-                        enterprise: { npr: 799, usd: 9.99, label: 'Enterprise' },
+                    const isAnnual = updates.duration === 365;
+                    const tierPrices: Record<string, { monthly_npr: number; annual_npr: number; monthly_usd: number; annual_usd: number; label: string }> = {
+                        pro:        { monthly_npr: 299,  annual_npr: 2990,  monthly_usd: 6.99,  annual_usd: 69.99,  label: 'Arctic Pro' },
+                        enterprise: { monthly_npr: 499,  annual_npr: 4990,  monthly_usd: 9.99,  annual_usd: 99.99,  label: 'Enterprise' },
                     };
                     const priceInfo = tierPrices[updates.newTier];
                     const newInvoice = {
                         id: `INV-${Date.now().toString(36).toUpperCase()}`,
-                        plan: priceInfo.label,
+                        plan: `${priceInfo.label}${isAnnual ? ' (Annual)' : ' (Monthly)'}`,
                         purchaser: targetUser?.email || targetId,
                         company: targetUser?.company_name || '—',
                         currency: 'NPR',
-                        amount: priceInfo.npr,
+                        amount: isAnnual ? priceInfo.annual_npr : priceInfo.monthly_npr,
                         status: 'Succeeded',
                         date: new Date().toISOString(),
                         activatedBy: user?.email || 'Admin',
@@ -760,13 +808,13 @@ export default function AdminDashboardClient() {
 
                 <nav className="flex-1 px-4 space-y-1">
                     { [
-{ id: 'overview', label: 'Command Hub', icon: LayoutDashboard, restricted: user?.role !== 'owner' && user?.role !== 'admin' },
+{ id: 'overview', label: 'Command Hub', icon: LayoutDashboard, restricted: accessVerified && user?.role !== 'owner' && user?.role !== 'admin' },
 { id: 'users', label: 'User Entities', icon: Users },
-{ id: 'staff', label: 'Staff Terminal', icon: ShieldAlert, restricted: user?.role === 'support' },
-{ id: 'history', label: 'Action History', icon: History, restricted: user?.role !== 'owner' && user?.role !== 'admin' },
+{ id: 'staff', label: 'Staff Terminal', icon: ShieldAlert, restricted: accessVerified && user?.role === 'support' },
+{ id: 'history', label: 'Action History', icon: History, restricted: accessVerified && user?.role !== 'owner' && user?.role !== 'admin' },
                         { id: 'messages', label: 'Support Queue', icon: MessageSquare },
                         { id: 'upgrades', label: 'Activation Hub', icon: ArrowUpCircle },
-                        { id: 'billing', label: 'Fiscal Assets', icon: CreditCard, restricted: user?.role === 'support' },
+                        { id: 'billing', label: 'Fiscal Assets', icon: CreditCard, restricted: accessVerified && user?.role === 'support' },
                     ].map((item) => (
                         !item.restricted && (
                             <button
@@ -1374,7 +1422,7 @@ export default function AdminDashboardClient() {
                                         </div>
                                         {actionLog.length > 0 && (
                                             <button
-                                                onClick={() => setActionLog([])}
+                                                onClick={() => { setActionLog([]); try { localStorage.removeItem('adminActionLog'); } catch {} }}
                                                 className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-red-500 transition-colors px-3 py-2 border border-slate-100 rounded-sm hover:border-red-100 hover:bg-red-50"
                                             >
                                                 Clear Log

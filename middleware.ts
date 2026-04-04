@@ -3,6 +3,43 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 // ═══════════════════════════════════════════════════════════════
+// JWT VERIFICATION CACHE — Reduce auth server round-trips
+// ═══════════════════════════════════════════════════════════════
+const jwtCache = new Map<string, { userId: string; expiresAt: number }>();
+const JWT_CACHE_TTL = 60_000; // 60 seconds
+
+function cleanupJwtCache() {
+    const now = Date.now();
+    for (const [token, data] of jwtCache.entries()) {
+        if (now > data.expiresAt) jwtCache.delete(token);
+    }
+}
+
+async function getVerifiedUser(supabase: any, accessToken?: string) {
+    // If we have a cached verification for this token, use it
+    if (accessToken) {
+        const cached = jwtCache.get(accessToken);
+        if (cached && Date.now() < cached.expiresAt) {
+            return { id: cached.userId };
+        }
+    }
+
+    // Otherwise verify with Supabase Auth server
+    const { data: { user }, error } = await supabase.auth.getUser();
+    
+    if (user && accessToken) {
+        jwtCache.set(accessToken, {
+            userId: user.id,
+            expiresAt: Date.now() + JWT_CACHE_TTL
+        });
+        // Cleanup old entries occasionally
+        if (Math.random() < 0.05) cleanupJwtCache();
+    }
+    
+    return error ? null : user;
+}
+
+// ═══════════════════════════════════════════════════════════════
 // ROUTE CLASSIFICATION — Define what's public vs protected
 // ═══════════════════════════════════════════════════════════════
 
@@ -113,16 +150,20 @@ export async function middleware(request: NextRequest) {
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         {
+            cookieOptions: {
+                sameSite: 'lax',
+                secure: false,
+                maxAge: 60 * 60 * 24 * 7,
+                path: '/',
+            },
             cookies: {
                 getAll() {
                     return request.cookies.getAll();
                 },
                 setAll(cookiesToSet) {
-                    // Update request cookies (for downstream handlers)
                     cookiesToSet.forEach(({ name, value }) =>
                         request.cookies.set(name, value)
                     );
-                    // Update response cookies (sent back to browser)
                     supabaseResponse = NextResponse.next({ request });
                     cookiesToSet.forEach(({ name, value, options }) =>
                         supabaseResponse.cookies.set(name, value, options)
@@ -132,10 +173,13 @@ export async function middleware(request: NextRequest) {
         }
     );
 
-    // Use getSession() instead of getUser() in middleware to avoid a synchronous network request 
-    // to the Supabase Auth server on EVERY SINGLE page load and API call.
-    const { data: { session } } = await supabase.auth.getSession();
-    const user = session?.user;
+    // Extract access token for caching — Supabase default cookie name pattern
+    const accessToken = request.cookies.get(`sb-${process.env.NEXT_PUBLIC_SUPABASE_URL?.split('//')[1]?.split('.')[0]}-auth-token`)?.value ||
+                       request.cookies.get('sb-access-token')?.value;
+
+    // Use getUser() to verify the JWT with Supabase Auth server (with caching)
+    // This is more secure than getSession() which only reads from cookies
+    const user = await getVerifiedUser(supabase, accessToken);
 
     // 5. Admin-gated routes: require admin role
     if (isAdminGatedRoute(pathname)) {

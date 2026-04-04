@@ -18,6 +18,20 @@ export async function PATCH(
             return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
         }
 
+        // Verify ownership through: meeting -> application -> job -> user
+        const { data: meeting } = await supabaseAdmin
+            .from('meetings')
+            .select('id, application_id, applications!inner(id, jobs!inner(user_id))')
+            .eq('id', id)
+            .single();
+
+        if (!meeting) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+        const jobUserId = (meeting as any).applications?.jobs?.user_id;
+        if (jobUserId && jobUserId !== auth.user.id) {
+            return NextResponse.json({ error: 'Not found' }, { status: 404 });
+        }
+
         const { error } = await supabaseAdmin
             .from('meetings')
             .update({ status })

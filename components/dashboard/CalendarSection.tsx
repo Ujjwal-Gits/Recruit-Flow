@@ -355,9 +355,9 @@ function NewInviteModal({
 }
 
 // ── Main CalendarSection ────────────────────────────────────────────────────
-export default function CalendarSection({ user }: { user: any }) {
-    const [meetings, setMeetings] = useState<Meeting[]>([]);
-    const [loadingMeetings, setLoadingMeetings] = useState(true);
+export default function CalendarSection({ user, initialMeetings }: { user: any, initialMeetings?: Meeting[] }) {
+    const [meetings, setMeetings] = useState<Meeting[]>(initialMeetings || []);
+    const [loadingMeetings, setLoadingMeetings] = useState(!initialMeetings);
     const [calendarSearch, setCalendarSearch] = useState('');
     const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
     const [showNewInvite, setShowNewInvite] = useState(false);
@@ -366,6 +366,11 @@ export default function CalendarSection({ user }: { user: any }) {
     useEffect(() => { setMounted(true); }, []);
 
     useEffect(() => {
+        if (initialMeetings) {
+            setMeetings(initialMeetings);
+            setLoadingMeetings(false);
+            return;
+        }
         if (user?.id) fetchMeetings();
     }, [user?.id]);
 
@@ -409,7 +414,7 @@ export default function CalendarSection({ user }: { user: any }) {
         );
     }, [meetings, calendarSearch]);
 
-    if (user?.tier !== 'enterprise' && user?.tier !== 'pro') {
+    if (user?.tier !== 'enterprise') {
         return (
             <div className="bg-white border border-slate-100 rounded-md p-20 text-center shadow-sm">
                 <div className="size-16 bg-slate-50 rounded-md flex items-center justify-center mx-auto mb-6 text-slate-400 ring-8 ring-slate-50/50">
@@ -417,10 +422,10 @@ export default function CalendarSection({ user }: { user: any }) {
                 </div>
                 <h3 className="text-xl font-bold text-slate-900 mb-2">Interview Calendar</h3>
                 <p className="text-slate-500 text-sm max-w-sm mx-auto mb-8 font-medium">
-                    Interview scheduling is available on Pro and Enterprise plans.
+                    Interview scheduling is available on the Enterprise plan.
                 </p>
                 <button className="bg-slate-900 text-white px-8 py-3 rounded text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all">
-                    Upgrade Plan
+                    Upgrade to Enterprise
                 </button>
             </div>
         );

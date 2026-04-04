@@ -12,8 +12,8 @@ export async function GET() {
 
         const userId = auth.user.id;
 
-        if (auth.tier !== 'pro' && auth.tier !== 'enterprise') {
-            return forbiddenResponse('Upgrade to Pro or Enterprise required to access interview scheduling.');
+        if (auth.tier !== 'enterprise') {
+            return forbiddenResponse('Enterprise subscription required to access interview scheduling.');
         }
 
         // Get all application IDs belonging to this user's jobs
@@ -69,8 +69,8 @@ export async function POST(req: Request) {
         const auth = await getAuthenticatedUser();
         if (!auth) return unauthorizedResponse();
 
-        if (auth.tier !== 'pro' && auth.tier !== 'enterprise') {
-            return forbiddenResponse('Upgrade to Pro or Enterprise required to create meetings.');
+        if (auth.tier !== 'enterprise') {
+            return forbiddenResponse('Enterprise subscription required to create meetings.');
         }
 
         const body = await req.json();

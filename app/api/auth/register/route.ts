@@ -39,10 +39,13 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Passwords do not match.' }, { status: 400, headers });
         }
 
-        // ── Check if user already exists ──
-        const { data: { users: existingUsers } } = await supabaseAdmin.auth.admin.listUsers() as any;
-        const userExists = (existingUsers as any[])?.some((u: any) => u.email === email);
-        if (userExists) {
+        // ── Check if user already exists — direct lookup, not listUsers() ──
+        const { data: existingProfile } = await supabaseAdmin
+            .from('profiles')
+            .select('id')
+            .eq('email', email)
+            .single();
+        if (existingProfile) {
             return NextResponse.json({ error: 'An account with this email already exists.' }, { status: 409, headers });
         }
 

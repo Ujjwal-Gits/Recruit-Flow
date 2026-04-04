@@ -20,7 +20,7 @@ export async function POST(req: Request) {
         const subjectLabel = subjectLabels[subject] || 'Contact Form';
 
         await sendEmail({
-            to: 'ujr.work@gmail.com',
+            to: process.env.CONTACT_EMAIL || 'ujr.work@gmail.com',
             subject: `[RecruitFlow Contact] ${subjectLabel} — ${name}`,
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 8px;">

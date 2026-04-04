@@ -48,8 +48,8 @@ export default function SupportChat() {
         let cancelled = false;
         const init = async () => {
             try {
-                const { data: { session } } = await supabase.auth.getSession();
-                if (!session?.user) {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) {
                     if (!cancelled) setLoadingProfile(false);
                     return;
                 }
@@ -62,14 +62,14 @@ export default function SupportChat() {
                 const { profile } = await res.json();
                 if (!cancelled) {
                     setUserProfile({
-                        id: session.user.id,
+                        id: user.id,
                         role: profile?.role || 'recruiter',
                         tier: profile?.tier || 'free'
                     });
                     // Pre-load message history for premium users
                     if (profile && !ADMIN_ROLES.includes(profile.role || '')) {
-                        fetchMessages(session.user.id);
-                        setupSubscription(session.user.id);
+                        fetchMessages(user.id);
+                        setupSubscription(user.id);
                     }
                 }
             } catch (err) {
@@ -143,11 +143,11 @@ export default function SupportChat() {
 
         channelRef.current = channel;
 
-        // Clean up previous poll if any
+        // Fallback poll every 30s if real-time subscription drops
         if (pollRef.current) clearInterval(pollRef.current);
         pollRef.current = setInterval(() => {
             fetchMessages(userId);
-        }, 3000);
+        }, 30000);
     };
 
     // Cleanup subscription on unmount

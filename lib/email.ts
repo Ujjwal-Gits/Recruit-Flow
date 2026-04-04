@@ -68,8 +68,10 @@ export async function sendOTPEmail({ to, code, purpose }: SendOTPOptions): Promi
     const htmlContent = getHtml(purpose, code);
     const subjectContent = subjects[purpose];
 
-    // Always log to server console for development
-    console.log(`\n[OTP-SERVER] Delivering via ${EMAIL_STRATEGY.toUpperCase()} to ${to}: ${code} (${purpose})\n`);
+    // Only log in development — never log OTP codes in production
+    if (process.env.NODE_ENV !== 'production') {
+        console.log(`\n[OTP-SERVER] Delivering via ${EMAIL_STRATEGY.toUpperCase()} to ${to} (${purpose})\n`);
+    }
 
     // --- Strategy: Resend ---
     if (EMAIL_STRATEGY === 'resend' && resend) {
@@ -105,7 +107,9 @@ export async function sendOTPEmail({ to, code, purpose }: SendOTPOptions): Promi
  * Sends a general purpose email.
  */
 export async function sendEmail({ to, subject, html }: { to: string, subject: string, html: string }): Promise<boolean> {
-    console.log(`\n[EMAIL-SERVER] Delivering via ${EMAIL_STRATEGY.toUpperCase()} to ${to}: ${subject}\n`);
+    if (process.env.NODE_ENV !== 'production') {
+        console.log(`\n[EMAIL-SERVER] Delivering via ${EMAIL_STRATEGY.toUpperCase()} to ${to}: ${subject}\n`);
+    }
 
     if (EMAIL_STRATEGY === 'resend' && resend) {
         try {

@@ -61,7 +61,7 @@ const ModernDropdown = ({ value, options, onChange, label }: { value: string, op
             <button
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}
-                className="w-full bg-slate-50 border border-slate-100 rounded-sm px-4 py-3 text-slate-900 text-sm font-bold flex items-center justify-between hover:bg-white hover:border-slate-900 transition-all"
+                className="w-full bg-slate-50 border border-slate-100 rounded-sm px-4 py-2 text-slate-900 text-sm font-bold flex items-center justify-between hover:bg-white hover:border-slate-900 transition-all"
             >
                 {value}
                 <MoreHorizontal className={`size-4 text-slate-300 transition-transform ${isOpen ? 'rotate-90 text-slate-900' : ''}`} />
@@ -145,7 +145,7 @@ const ModernDateTimePicker = ({ value, onChange, label, dark = false }: { value:
             <button
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}
-                className={`w-full text-left flex items-center justify-between px-4 py-3 rounded-sm border transition-all ${dark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-slate-50 border-slate-100 text-slate-900'} hover:border-slate-900`}
+                className={`w-full text-left flex items-center justify-between px-4 py-2 rounded-sm border transition-all ${dark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-slate-50 border-slate-100 text-slate-900'} hover:border-slate-900`}
             >
                 <span className="text-xs font-bold">{formatDisplay()}</span>
                 <Calendar className={`size-4 text-slate-300 transition-colors ${isOpen ? 'text-slate-900' : ''}`} />
@@ -713,10 +713,11 @@ function SupportChatInline({ userId }: { userId: string }) {
             })
             .subscribe();
 
-        // Polling fallback (every 3s) for high reliability if real-time replication is disabled in Supabase dashboard
+        // Polling fallback (every 30s) for high reliability if real-time replication is disabled in Supabase dashboard
+        // Reduced from 3s to 30s to improve performance
         const polling = setInterval(() => {
             fetchMessages();
-        }, 3000);
+        }, 30000);
 
         return () => {
             supabase.removeChannel(channel);
@@ -841,11 +842,24 @@ export default function DashboardClient() {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [mobileNavOpen, setMobileNavOpen] = useState(false);
     const [creating, setCreating] = useState(false);
+    const [generatingJD, setGeneratingJD] = useState(false);
     const [copied, setCopied] = useState<string | null>(null);
-    const [newJob, setNewJob] = useState({ title: '', company_name: '', description: '', workMode: 'Remote', deadline: '', links: [{ label: 'LinkedIn' }] as { label: string }[] });
+    const [newJob, setNewJob] = useState({ title: '', description: '', workMode: 'Remote', deadline: '', jobType: 'Full-time', education: 'Bachelor', experience: ['Fresher'], links: [{ label: 'LinkedIn' }] as { label: string }[] });
     const [createdJob, setCreatedJob] = useState<Job | null>(null);
     const [user, setUser] = useState<any>(null);
-    const [activeTab, setActiveTab] = useState<'postings' | 'communication' | 'crm' | 'calendar' | 'profile' | 'support'>('postings');
+    // Prefetched data — loaded once on mount, passed as props to avoid refetch on tab switch
+    const [crmCandidates, setCrmCandidates] = useState<CRMCandidate[]>([]);
+    const [meetingsData, setMeetingsData] = useState<Meeting[]>([]);
+    
+    // Persist active tab in localStorage to prevent reset on refresh
+    const [activeTab, setActiveTab] = useState<'postings' | 'communication' | 'crm' | 'calendar' | 'profile' | 'support'>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('dashboardActiveTab');
+            return (saved as any) || 'postings';
+        }
+        return 'postings';
+    });
+    
     const [jobFilter, setJobFilter] = useState<'all' | 'active' | 'completed'>('all');
     const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
     const [systemAlert, setSystemAlert] = useState<{ title: string; message: string; type: 'error' | 'success' | 'warn' | 'upgrade' } | null>(null);
@@ -874,38 +888,51 @@ export default function DashboardClient() {
         }));
     };
 
-    // Auth Guard — fetches profile + jobs in PARALLEL for speed
+    // Auth Guard — fetches all data in PARALLEL for speed — v2
     useEffect(() => {
         const checkAuth = async () => {
             try {
-                const { data: { session } } = await supabase.auth.getSession();
-                if (!session) {
+                const authResult = await supabase.auth.getUser();
+                const currentUser = authResult.data.user;
+                if (!currentUser) {
                     router.push('/login');
                     return;
                 }
 
-                // Fetch profile AND jobs in parallel — saves 2-4 seconds
                 const [profileRes, jobsRes] = await Promise.allSettled([
                     fetch('/api/profile'),
-                    fetch('/api/jobs')
+                    fetch('/api/jobs'),
                 ]);
 
                 let profileData: any = {};
                 if (profileRes.status === 'fulfilled' && profileRes.value.ok) {
-                    const { profile } = await profileRes.value.json();
-                    if (profile) profileData = profile;
+                    const json = await profileRes.value.json();
+                    if (json.profile) profileData = json.profile;
                 }
 
                 if (jobsRes.status === 'fulfilled' && jobsRes.value.ok) {
-                    const { jobs: fetchedJobs } = await jobsRes.value.json();
-                    if (fetchedJobs) setJobs(fetchedJobs);
+                    const json = await jobsRes.value.json();
+                    if (json.jobs) setJobs(json.jobs);
                 }
-                setLoading(false);
 
-                // Use db-provided profile data only
+                const isPaidTier = profileData?.tier === 'pro' || profileData?.tier === 'enterprise';
+                const isEnterprise = profileData?.tier === 'enterprise';
 
+                // CRM: pro + enterprise | Meetings/Calendar: enterprise only
+                const prefetches: Promise<void>[] = [];
+                if (isPaidTier) prefetches.push(
+                    fetch('/api/crm/candidates').then(r => r.ok ? r.json() : null)
+                        .then(d => { if (d?.candidates) setCrmCandidates(d.candidates); })
+                        .catch(() => {})
+                );
+                if (isEnterprise) prefetches.push(
+                    fetch('/api/meetings').then(r => r.ok ? r.json() : null)
+                        .then(d => { if (d?.meetings) setMeetingsData(d.meetings); })
+                        .catch(() => {})
+                );
+                await Promise.allSettled(prefetches);
 
-                const finalUser = { ...session.user, ...profileData, profile: profileData };
+                const finalUser = { ...currentUser, ...profileData, profile: profileData };
 
                 if (['owner', 'manager', 'support', 'admin'].includes(profileData?.role)) {
                     router.push('/iamadmin');
@@ -913,12 +940,11 @@ export default function DashboardClient() {
                 }
 
                 setUser(finalUser);
+                setLoading(false);
 
-                // Show profile completion alert if company name or phone is missing
                 const isIncomplete = !profileData?.company_name?.trim() || !profileData?.phone_number?.trim();
-                if (isIncomplete) {
-                    setShowProfileAlert(true);
-                }
+                if (isIncomplete) setShowProfileAlert(true);
+
             } catch (err) {
                 console.error('Auth check fatal error:', err);
             } finally {
@@ -928,6 +954,13 @@ export default function DashboardClient() {
         };
         checkAuth();
     }, [router]);
+
+    // Persist active tab to localStorage whenever it changes
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('dashboardActiveTab', activeTab);
+        }
+    }, [activeTab]);
 
     // Lock scroll when modal is open
     useEffect(() => {
@@ -985,6 +1018,9 @@ export default function DashboardClient() {
                 text: newJob.description,
                 workMode: newJob.workMode,
                 deadline: newJob.deadline,
+                jobType: newJob.jobType,
+                education: newJob.education,
+                experience: newJob.experience,
                 links: newJob.links
             });
 
@@ -993,7 +1029,7 @@ export default function DashboardClient() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     title: newJob.title,
-                    company_name: newJob.company_name,
+                    company_name: user?.company_name || user?.profile?.company_name || '',
                     description: compositeDescription,
                     userId: user?.id
                 }),
@@ -1003,7 +1039,7 @@ export default function DashboardClient() {
 
             setCreatedJob(data.job);
             setJobs(prev => [data.job, ...prev]);
-            setNewJob({ title: '', company_name: '', description: '', workMode: 'Remote', deadline: '', links: [{ label: 'LinkedIn' }] });
+            setNewJob({ title: '', description: '', workMode: 'Remote', deadline: '', jobType: 'Full-time', education: 'Bachelor', experience: ['Fresher'], links: [{ label: 'LinkedIn' }] });
 
         } catch (err: any) {
             const isLimitError = err.message?.toLowerCase().includes('upgrade') || err.message?.toLowerCase().includes('limit') || err.message?.toLowerCase().includes('allows up to');
@@ -1072,7 +1108,7 @@ export default function DashboardClient() {
                                 <button
                                     onClick={() => {
                                         onClose();
-                                        setActiveTab('support'); // Or a pricing page if it exists
+                                        router.push('/pricing');
                                     }}
                                     className="w-full py-3.5 bg-slate-900 text-white rounded-sm text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/10"
                                 >
@@ -1209,16 +1245,16 @@ export default function DashboardClient() {
                         )}
                     </button>
                     <button
-                        onClick={() => (user?.tier === 'enterprise' || user?.tier === 'pro') ? setActiveTab('calendar') : null}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-sm text-xs font-bold transition-all ${activeTab === 'calendar' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-400 hover:text-slate-900 hover:bg-slate-50'} ${!(user?.tier === 'enterprise' || user?.tier === 'pro') ? 'opacity-60 cursor-not-allowed' : ''}`}
+                        onClick={() => user?.tier === 'enterprise' ? setActiveTab('calendar') : null}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-sm text-xs font-bold transition-all ${activeTab === 'calendar' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-400 hover:text-slate-900 hover:bg-slate-50'} ${user?.tier !== 'enterprise' ? 'opacity-60 cursor-not-allowed' : ''}`}
                     >
 
                         <Calendar className="size-4" />
                         Interview Calendar
-                        {user?.tier === 'enterprise' || user?.tier === 'pro' ? (
+                        {user?.tier === 'enterprise' ? (
                             <span className="ml-auto bg-emerald-100 text-[10px] px-1.5 py-0.5 rounded-sm text-emerald-600">UNLOCKED</span>
                         ) : (
-                            <span className="ml-auto bg-amber-50 text-[10px] px-1.5 py-0.5 rounded-sm text-amber-600">UPGRADE</span>
+                            <span className="ml-auto bg-amber-50 text-[10px] px-1.5 py-0.5 rounded-sm text-amber-600">ENTERPRISE</span>
                         )}
                     </button>
                     <button
@@ -1530,7 +1566,7 @@ export default function DashboardClient() {
                                 transition={{ duration: 0.3 }}
                                 className="space-y-8 pb-20"
                             >
-                                <CRMSection user={user} mailSettings={mailSettings} />
+                                <CRMSection user={user} mailSettings={mailSettings} initialCandidates={crmCandidates} />
                             </motion.div>
                         ) : activeTab === 'calendar' ? (
                             <motion.div
@@ -1541,7 +1577,7 @@ export default function DashboardClient() {
                                 transition={{ duration: 0.3 }}
                                 className="space-y-8 pb-20"
                             >
-                                <CalendarSection user={user} />
+                                <CalendarSection user={user} initialMeetings={meetingsData} />
                             </motion.div>
                         ) : activeTab === 'profile' ? (
                             <motion.div
@@ -1699,7 +1735,7 @@ export default function DashboardClient() {
             {/* Create Job Modal */}
             <AnimatePresence>
                 {showCreateModal && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 lg:p-10">
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 lg:p-6">
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
@@ -1711,11 +1747,11 @@ export default function DashboardClient() {
                             initial={{ opacity: 0, scale: 0.95, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                            className="relative bg-white rounded-sm border border-slate-100 w-full max-w-xl shadow-2xl overflow-hidden"
+                            className="relative bg-white rounded-sm border border-slate-100 w-full max-w-xl shadow-2xl overflow-hidden flex flex-col"
                             data-lenis-prevent
                         >
-                            <div className="p-8 border-b border-slate-50 flex items-center justify-between">
-                                <h3 className="text-lg font-bold tracking-tight text-slate-900">
+                            <div className="px-6 py-2 border-b border-slate-50 flex items-center justify-between shrink-0">
+                                <h3 className="text-base font-bold tracking-tight text-slate-900">
                                     {createdJob ? 'Post Finalized' : 'New Posting'}
                                 </h3>
                                 <button
@@ -1760,49 +1796,80 @@ export default function DashboardClient() {
                                     </div>
                                 </div>
                             ) : (
-                                <form onSubmit={createJob} className="p-8 space-y-5">
+                                <form onSubmit={createJob} className="flex flex-col">
+                                    <div className="px-6 pt-3 pb-3 space-y-4">
+                                    {/* Row 1: Title + Job Type */}
                                     <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
+                                        <div className="space-y-1.5">
                                             <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Position Title</label>
                                             <input
                                                 required
                                                 value={newJob.title}
                                                 onChange={(e) => setNewJob(prev => ({ ...prev, title: e.target.value }))}
                                                 placeholder="e.g. Senior MLP Engineer"
-                                                className="w-full border-b border-slate-100 py-2 text-slate-900 text-sm font-medium focus:border-slate-900 outline-none transition-all placeholder:text-slate-300"
+                                                className="w-full border-b border-slate-100 py-1.5 text-slate-900 text-sm font-medium focus:border-slate-900 outline-none transition-all placeholder:text-slate-300"
                                             />
                                         </div>
-
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Company Dept.</label>
-                                            <input
-                                                required
-                                                value={newJob.company_name}
-                                                onChange={(e) => setNewJob(prev => ({ ...prev, company_name: e.target.value }))}
-                                                placeholder="e.g. Squad A"
-                                                className="w-full border-b border-slate-100 py-2 text-slate-900 text-sm font-medium focus:border-slate-900 outline-none transition-all placeholder:text-slate-300"
-                                            />
-                                        </div>
+                                        <ModernDropdown
+                                            label="Job Type"
+                                            value={newJob.jobType}
+                                            options={['Full-time', 'Part-time', 'Internship']}
+                                            onChange={(v) => setNewJob(prev => ({ ...prev, jobType: v }))}
+                                        />
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-8">
-                                        <ModernDropdown 
+                                    {/* Row 2: Work Mode + Deadline */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <ModernDropdown
                                             label="Work Mode"
                                             value={newJob.workMode}
                                             options={['Remote', 'Hybrid', 'On-site']}
                                             onChange={(v) => setNewJob(prev => ({ ...prev, workMode: v }))}
                                         />
-
-                                        <ModernDateTimePicker 
+                                        <ModernDateTimePicker
                                             label="Application Deadline"
                                             value={newJob.deadline}
                                             onChange={(v) => setNewJob(prev => ({ ...prev, deadline: v }))}
                                         />
                                     </div>
 
-                                    <div className="space-y-2">
+                                    {/* Row 3: Education + Experience */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <ModernDropdown
+                                            label="Min. Education"
+                                            value={newJob.education}
+                                            options={['10+', '+2', 'Bachelor', 'Master']}
+                                            onChange={(v) => setNewJob(prev => ({ ...prev, education: v }))}
+                                        />
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Experience (up to 2)</label>
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {['Fresher', '6+ months', '1 year+', '2 years+', 'Other'].map(exp => {
+                                                    const isSelected = newJob.experience.includes(exp);
+                                                    return (
+                                                        <button
+                                                            type="button"
+                                                            key={exp}
+                                                            onClick={() => setNewJob(prev => {
+                                                                if (isSelected) return { ...prev, experience: prev.experience.filter(e => e !== exp) };
+                                                                if (prev.experience.length >= 2) return prev;
+                                                                return { ...prev, experience: [...prev.experience, exp] };
+                                                            })}
+                                                            className={`px-2.5 py-1 rounded-sm border text-[9px] font-black uppercase tracking-widest transition-all ${isSelected ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-400 border-slate-200 hover:border-slate-400 hover:text-slate-900'}`}
+                                                        >
+                                                            {isSelected && <Check className="size-2.5 inline-block mr-1" />}
+                                                            {exp}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Requested Links */}
+                                    <div className="space-y-1.5">
                                         <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Requested Links (Optional)</label>
-                                        <div className="flex flex-wrap gap-2 text-[10px] font-bold">
+                                        <div className="flex flex-wrap gap-1.5">
                                             {['LinkedIn', 'GitHub', 'Portfolio', 'Instagram', 'Drive'].map(link => {
                                                 const isSelected = newJob.links.some(l => l.label === link);
                                                 return (
@@ -1812,44 +1879,78 @@ export default function DashboardClient() {
                                                         onClick={() => {
                                                             setNewJob(prev => {
                                                                 const exists = prev.links.find(l => l.label === link);
-                                                                return {
-                                                                    ...prev,
-                                                                    links: exists ? prev.links.filter(l => l.label !== link) : [...prev.links, { label: link }]
-                                                                }
+                                                                return { ...prev, links: exists ? prev.links.filter(l => l.label !== link) : [...prev.links, { label: link }] };
                                                             });
                                                         }}
-                                                        className={`px-3 py-1.5 rounded-full border text-[9px] font-black uppercase tracking-widest transition-all ${isSelected ? 'bg-slate-900 text-white border-slate-900 shadow-lg shadow-slate-900/10' : 'bg-white text-slate-400 border-slate-200 hover:border-slate-400 hover:text-slate-900'}`}
+                                                        className={`px-3 py-1.5 rounded-sm border text-[9px] font-black uppercase tracking-widest transition-all ${isSelected ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-400 border-slate-200 hover:border-slate-400 hover:text-slate-900'}`}
                                                     >
                                                         {isSelected && <Check className="size-2.5 inline-block mr-1.5" />}
                                                         {link}
                                                     </button>
-                                                )
+                                                );
                                             })}
                                         </div>
                                     </div>
 
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Context / Description</label>
+                                    {/* Description — only this section scrolls */}
+                                    <div className="space-y-1.5">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Context / Description</label>
+                                            {(user?.tier === 'pro' || user?.tier === 'enterprise') && (
+                                                <button
+                                                    type="button"
+                                                    disabled={generatingJD || !newJob.title.trim()}
+                                                    onClick={async () => {
+                                                        if (!newJob.title.trim()) return;
+                                                        setGeneratingJD(true);
+                                                        try {
+                                                            const res = await fetch('/api/ai-generate-jd', {
+                                                                method: 'POST',
+                                                                headers: { 'Content-Type': 'application/json' },
+                                                                body: JSON.stringify({
+                                                                    title: newJob.title,
+                                                                    company_name: user?.company_name || '',
+                                                                    workMode: newJob.workMode,
+                                                                    jobType: newJob.jobType,
+                                                                    education: newJob.education,
+                                                                    experience: newJob.experience,
+                                                                })
+                                                            });
+                                                            const data = await res.json();
+                                                            if (data.description) setNewJob(prev => ({ ...prev, description: data.description }));
+                                                        } catch {}
+                                                        finally { setGeneratingJD(false); }
+                                                    }}
+                                                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-white text-[9px] font-black uppercase tracking-widest transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                                                    style={{ background: 'linear-gradient(135deg, #2d6a4f, #40916c)' }}
+                                                    title={!newJob.title.trim() ? 'Enter a job title first' : 'Auto-generate with AI'}
+                                                >
+                                                    {generatingJD ? <Loader2 className="size-3 animate-spin" /> : <Sparkles className="size-3" />}
+                                                    {generatingJD ? 'Generating...' : 'AI Generate'}
+                                                </button>
+                                            )}
+                                        </div>
                                         <textarea
-                                            rows={3}
+                                            rows={5}
                                             value={newJob.description}
                                             onChange={(e) => setNewJob(prev => ({ ...prev, description: e.target.value }))}
-                                            placeholder="Briefly describe the role for candidates..."
-                                            className="w-full border-b border-slate-200 py-2 text-slate-900 text-sm font-medium focus:border-slate-900 outline-none transition-all resize-none placeholder:text-slate-300"
+                                            placeholder={user?.tier === 'pro' || user?.tier === 'enterprise' ? 'Type a title above then click AI Generate, or write manually...' : 'Briefly describe the role for candidates...'}
+                                            className="w-full border border-slate-100 rounded-sm p-3 text-slate-900 text-sm font-medium focus:border-slate-900 outline-none transition-all resize-none placeholder:text-slate-300 overflow-y-auto"
+                                            style={{ minHeight: '7.5rem', maxHeight: '7.5rem' }}
                                         />
                                     </div>
+                                    </div>
 
-                                    <button
-                                        type="submit"
-                                        disabled={creating}
-                                        className="w-full h-12 bg-slate-900 text-white rounded-sm font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-slate-800 transition-all disabled:opacity-50 shadow-lg shadow-slate-900/10"
-                                    >
-                                        {creating ? (
-                                            <><Loader2 className="size-4 animate-spin" /> Finalizing...</>
-                                        ) : (
-                                            <>Post Pipeline <ChevronRight className="size-4" /></>
-                                        )}
-                                    </button>
+                                    {/* Sticky submit */}
+                                    <div className="px-6 pt-4 pb-4 border-t border-slate-100 shrink-0">
+                                        <button
+                                            type="submit"
+                                            disabled={creating}
+                                            className="w-full h-11 bg-slate-900 text-white rounded-sm font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-slate-800 transition-all disabled:opacity-50"
+                                        >
+                                            {creating ? <><Loader2 className="size-4 animate-spin" /> Finalizing...</> : <>Post Pipeline <ChevronRight className="size-4" /></>}
+                                        </button>
+                                    </div>
                                 </form>
                             )}
                         </motion.div>

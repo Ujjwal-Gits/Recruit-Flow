@@ -359,8 +359,54 @@ export default function JobFlipbookClient({ jobId }: { jobId: string }) {
     const [isMailOpen, setIsMailOpen] = useState(false);
     const [filterStatus, setFilterStatus] = useState<'all' | 'accepted' | 'rejected' | 'pending'>('all');
     const [viewMode, setViewMode] = useState<'flipbook' | 'pdf'>('flipbook');
-    const [tier, setTier] = useState<'free' | 'pro' | 'enterprise'>('free'); // Tier system
+    const [tier, setTier] = useState<'free' | 'pro' | 'enterprise'>('free');
     const [user, setUser] = useState<any>(null);
+    const [shortlistResult, setShortlistResult] = useState<any>(null);
+    const [shortlisting, setShortlisting] = useState(false);
+    const [showShortlist, setShowShortlist] = useState(false);
+    const [showShortlistConfirm, setShowShortlistConfirm] = useState(false);
+    const [shortlistUsed, setShortlistUsed] = useState(false);
+
+    // Check DB for existing shortlist on load
+    useEffect(() => {
+        if (!jobId) return;
+        fetch(`/api/ai-shortlist?jobId=${jobId}`)
+            .then(r => r.ok ? r.json() : null)
+            .then(d => {
+                if (d?.exists && d.shortlist) {
+                    setShortlistResult(d.shortlist);
+                    setShortlistUsed(true);
+                }
+            })
+            .catch(() => {});
+    }, [jobId]);
+
+    const runShortlist = async () => {
+        setShowShortlistConfirm(false);
+        setShortlisting(true);
+        setShowShortlist(true);
+        try {
+            const res = await fetch('/api/ai-shortlist', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ jobId, applicants: applicants.map(a => ({ id: a.id, name: a.name, ats_score: a.ats_score, ai_summary: a.ai_summary })) })
+            });
+            const data = await res.json();
+            setShortlistResult(data);
+            setShortlistUsed(true);
+        } catch { setShortlistResult(null); }
+        finally { setShortlisting(false); }
+    };
+
+    useEffect(() => {
+        const isOpen = showShortlist || showShortlistConfirm;
+        document.body.style.overflow = isOpen ? 'hidden' : '';
+        document.documentElement.style.overflow = isOpen ? 'hidden' : '';
+        return () => {
+            document.body.style.overflow = '';
+            document.documentElement.style.overflow = '';
+        };
+    }, [showShortlist, showShortlistConfirm]);
 
     // Search state
     const [searchQuery, setSearchQuery] = useState('');
@@ -423,48 +469,40 @@ export default function JobFlipbookClient({ jobId }: { jobId: string }) {
 
     useEffect(() => {
         const checkAuthAndFetch = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
                 router.push('/login');
                 return;
             }
             setAuthLoading(false);
 
             try {
-                // Fetch profile to get tier securely from backend
+                // Fetch profile AND job data in parallel — cuts load time in half
+                const [profileRes, jobRes] = await Promise.allSettled([
+                    fetch('/api/profile'),
+                    fetch(`/api/job/${jobId}`),
+                ]);
+
                 let currentTier = 'free';
-                try {
-                    const res = await fetch('/api/profile', { cache: 'no-store' });
-                    if (res.ok) {
-                        const { profile } = await res.json();
-                        currentTier = profile?.tier || 'free';
-                        if (profile?.company_name) setCompanyName(profile.company_name);
-                    }
-                } catch (e) {
-                    console.error('Tier fetch failed:', e);
+                if (profileRes.status === 'fulfilled' && profileRes.value.ok) {
+                    const { profile } = await profileRes.value.json();
+                    currentTier = profile?.tier || 'free';
+                    if (profile?.company_name) setCompanyName(profile.company_name);
                 }
-                // Use current tier exactly as registered in the database
+
                 setTier(currentTier as any);
-                setUser({ ...session.user, tier: currentTier });
+                setUser({ ...user, tier: currentTier });
+                setViewMode(currentTier === 'pro' || currentTier === 'enterprise' ? 'flipbook' : 'pdf');
 
-                if (currentTier === 'pro' || currentTier === 'enterprise') {
-                    setViewMode('flipbook');
-                } else {
-                    setViewMode('pdf');
+                if (jobRes.status === 'fulfilled' && jobRes.value.ok) {
+                    const data = await jobRes.value.json();
+                    if (data.job) setJob(data.job);
+                    if (data.applicants) setApplicants(data.applicants);
                 }
-
-                const res = await fetch(`/api/job/${jobId}`);
-                const data = await res.json();
-                console.log('[Flipbook] API response:', { status: res.status, jobFound: !!data.job, applicantCount: data.applicants?.length, error: data.error });
-                if (data.job) setJob(data.job);
-                if (data.applicants) setApplicants(data.applicants);
-
-                // Load global mail settings
+                // Load global mail settings from localStorage (sync, no network)
                 const saved = localStorage.getItem('rf_mail_settings');
-                if (saved) {
-                    const parsed = JSON.parse(saved);
-                    setSavedSettings(parsed);
-                }
+                if (saved) setSavedSettings(JSON.parse(saved));
+
             } catch (err) {
                 console.error('Failed to fetch job data:', err);
             } finally {
@@ -819,9 +857,7 @@ export default function JobFlipbookClient({ jobId }: { jobId: string }) {
                         </button>
                     ) : (
                         <div className="relative group/lock">
-                            <button
-                                className="h-9 px-4 bg-slate-50 border border-slate-100 text-slate-300 rounded font-black uppercase tracking-widest text-[9px] flex items-center gap-2 cursor-not-allowed"
-                            >
+                            <button className="h-9 px-4 bg-slate-50 border border-slate-100 text-slate-300 rounded font-black uppercase tracking-widest text-[9px] flex items-center gap-2 cursor-not-allowed">
                                 <Lock className="size-3 opacity-50" />
                                 Bulk Download
                             </button>
@@ -829,6 +865,21 @@ export default function JobFlipbookClient({ jobId }: { jobId: string }) {
                                 Enterprise feature: Aggregate all pipeline candidates into one PDF.
                             </div>
                         </div>
+                    )}
+
+                    {tier === 'enterprise' && applicants.length > 0 && (
+                        <button
+                            onClick={() => shortlistUsed ? setShowShortlist(true) : setShowShortlistConfirm(true)}
+                            className="h-9 px-4 text-white rounded font-bold text-[11px] transition-all flex items-center gap-2 hover:opacity-90 shadow-sm active:scale-95"
+                            style={{
+                                background: 'linear-gradient(135deg, #2d6a4f 0%, #40916c 50%, #1b4332 100%)',
+                                backgroundImage: `linear-gradient(135deg, #2d6a4f 0%, #40916c 50%, #1b4332 100%), url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.15'/%3E%3C/svg%3E")`,
+                                backgroundBlendMode: 'normal, overlay',
+                            }}
+                        >
+                            <Sparkles className="size-3.5" />
+                            {shortlistUsed ? 'View Shortlist' : 'AI Shortlist'}
+                        </button>
                     )}
                 </div>
             </nav>
@@ -1434,6 +1485,156 @@ export default function JobFlipbookClient({ jobId }: { jobId: string }) {
                             </div>
                             <div className="flex-1 overflow-hidden bg-white">
                                 <AIChatPanel jobId={jobId} applicants={applicants} onCandidateNavigate={handleJumpToApplicant} onClose={() => setIsChatOpen(false)} />
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* AI Shortlist Confirmation Modal */}
+            <AnimatePresence>
+                {showShortlistConfirm && (
+                    <div className="fixed inset-0 z-[110] flex items-center justify-center p-6">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+                            onClick={() => setShowShortlistConfirm(false)} />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                            className="relative bg-white rounded-sm border border-slate-100 shadow-2xl w-full max-w-sm p-8 text-center"
+                        >
+                            <div className="size-12 rounded-sm flex items-center justify-center mx-auto mb-5"
+                                style={{ background: 'linear-gradient(135deg, #2d6a4f, #40916c)' }}>
+                                <Sparkles className="size-5 text-white" />
+                            </div>
+                            <h3 className="text-base font-black text-slate-900 mb-2">Use AI Shortlist?</h3>
+                            <p className="text-xs font-medium text-slate-500 leading-relaxed mb-1">
+                                You can only use AI Shortlist <span className="font-black text-slate-900">once</span> for:
+                            </p>
+                            <p className="text-sm font-black text-slate-900 mb-6">"{job?.title}"</p>
+                            <p className="text-[10px] text-slate-400 font-medium mb-6">
+                                The result will be saved permanently. This action cannot be undone.
+                            </p>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setShowShortlistConfirm(false)}
+                                    className="flex-1 py-2.5 border border-slate-200 text-slate-600 text-[10px] font-black uppercase tracking-widest rounded-sm hover:bg-slate-50 transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={runShortlist}
+                                    className="flex-1 py-2.5 text-white text-[10px] font-black uppercase tracking-widest rounded-sm transition-all"
+                                    style={{ background: 'linear-gradient(135deg, #2d6a4f 0%, #40916c 100%)' }}
+                                >
+                                    Confirm
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* AI Shortlist Panel */}
+            <AnimatePresence>
+                {showShortlist && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+                            onClick={() => !shortlisting && setShowShortlist(false)} />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.96, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.96, y: 20 }}
+                            className="relative bg-white rounded-sm border border-slate-100 shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden"
+                        >
+                            {/* Header */}
+                            <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between shrink-0">
+                                <div className="flex items-center gap-3">
+                                    <div className="size-9 rounded-sm flex items-center justify-center"
+                                        style={{ background: 'linear-gradient(135deg, #2d6a4f, #40916c)' }}>
+                                        <Sparkles className="size-4 text-white" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-black text-slate-900">AI Candidate Shortlist</h3>
+                                        <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mt-0.5">Enterprise Intelligence Engine</p>
+                                    </div>
+                                </div>
+                                <button onClick={() => setShowShortlist(false)} className="p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-50 rounded transition-all">
+                                    <X className="size-4" />
+                                </button>
+                            </div>
+
+                            {/* Body */}
+                            <div className="flex-1 overflow-y-auto overscroll-contain p-6 space-y-5" data-lenis-prevent>
+                                {shortlisting ? (
+                                    <div className="py-20 flex flex-col items-center gap-4">
+                                        <div className="size-12 rounded-full flex items-center justify-center"
+                                            style={{ background: 'linear-gradient(135deg, #d8f3dc, #b7e4c7)' }}>
+                                            <Sparkles className="size-5 animate-pulse" style={{ color: '#2d6a4f' }} />
+                                        </div>
+                                        <p className="text-sm font-bold text-slate-600">Analyzing {applicants.length} candidates...</p>
+                                        <p className="text-xs text-slate-400 font-medium">AI is ranking and comparing all profiles</p>
+                                    </div>
+                                ) : shortlistResult ? (
+                                    <>
+                                        {/* Summary */}
+                                        <div className="rounded-sm p-4 border" style={{ background: 'linear-gradient(135deg, #d8f3dc 0%, #b7e4c7 100%)', borderColor: '#95d5b2' }}>
+                                            <p className="text-[9px] font-black uppercase tracking-widest mb-2" style={{ color: '#1b4332' }}>Pool Analysis</p>
+                                            <p className="text-xs font-medium text-slate-700 leading-relaxed">{shortlistResult.summary}</p>
+                                            {shortlistResult.recommendation && (
+                                                <p className="text-xs font-bold mt-2 pt-2 border-t" style={{ color: '#2d6a4f', borderColor: '#95d5b2' }}>
+                                                    ★ {shortlistResult.recommendation}
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        {/* Ranked candidates */}
+                                        <div className="space-y-3">
+                                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Top {shortlistResult.shortlist?.length} Candidates</p>
+                                            {shortlistResult.shortlist?.map((c: any) => (
+                                                <div key={c.id} className="border rounded-sm p-4"
+                                                    style={c.rank === 1 ? { borderColor: '#95d5b2', background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)' } : { borderColor: '#f1f5f9', background: '#fff' }}>
+                                                    <div className="flex items-start justify-between gap-3 mb-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="size-6 rounded-sm flex items-center justify-center text-[10px] font-black text-white"
+                                                                style={{ background: c.rank === 1 ? 'linear-gradient(135deg, #2d6a4f, #40916c)' : '#e2e8f0', color: c.rank === 1 ? '#fff' : '#64748b' }}>
+                                                                #{c.rank}
+                                                            </span>
+                                                            <span className="text-sm font-bold text-slate-900">{c.name}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2 shrink-0">
+                                                            <span className="text-[10px] font-black text-slate-500">Match</span>
+                                                            <span className={`text-sm font-black ${c.score >= 75 ? 'text-emerald-600' : c.score >= 50 ? 'text-amber-600' : 'text-red-500'}`}>{c.score}%</span>
+                                                        </div>
+                                                    </div>
+                                                    <p className="text-xs font-medium text-slate-600 leading-relaxed mb-2">{c.verdict}</p>
+                                                    {c.strengths?.length > 0 && (
+                                                        <div className="flex flex-wrap gap-1.5 mb-2">
+                                                            {c.strengths.map((s: string, i: number) => (
+                                                                <span key={i} className="text-[9px] font-bold px-2 py-0.5 rounded-sm border"
+                                                                    style={{ background: '#d8f3dc', color: '#1b4332', borderColor: '#95d5b2' }}>{s}</span>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                    {c.gap && <p className="text-[10px] text-slate-400 font-medium">⚠ {c.gap}</p>}
+                                                    <button
+                                                        onClick={() => { handleJumpToApplicant(c.id); setShowShortlist(false); }}
+                                                        className="mt-2 text-[9px] font-black uppercase tracking-widest transition-colors hover:opacity-70"
+                                                        style={{ color: '#2d6a4f' }}
+                                                    >
+                                                        View Profile →
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="py-20 text-center">
+                                        <p className="text-sm font-bold text-red-500">Analysis failed. Please try again.</p>
+                                    </div>
+                                )}
                             </div>
                         </motion.div>
                     </div>

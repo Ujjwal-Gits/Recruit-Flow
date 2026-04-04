@@ -31,6 +31,8 @@ function checkUserRateLimit(userId: string): { allowed: boolean; reason?: string
     return { allowed: true };
 }
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: Request) {
     try {
         const auth = await getAuthenticatedUser();

@@ -15,7 +15,7 @@ export async function GET(req: Request) {
 
         let query = supabaseAdmin
             .from('support_messages')
-            .select('*')
+            .select('id, user_id, sender_id, sender, message_text, subject, image_url, created_at')
             .eq('user_id', userId)
             .order('created_at', { ascending: true });
 
