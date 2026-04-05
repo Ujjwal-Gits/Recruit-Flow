@@ -13,11 +13,14 @@ export async function GET() {
             return forbiddenResponse();
         }
 
+        // Filter out SUPPORT/CLOSED_SUPPORT/RESOLVED_ACTIVATION at the DB level
+        // so we only pull activation-related messages instead of everything
         const { data: messagesResult, error: msgError } = await supabaseAdmin
             .from('support_messages')
-            .select('*')
+            .select('id, user_id, sender_id, sender, message_text, subject, created_at, image_url')
+            .not('subject', 'in', '("SUPPORT","CLOSED_SUPPORT","RESOLVED_ACTIVATION")')
             .order('created_at', { ascending: false })
-            .limit(500);
+            .limit(200);
 
         if (msgError) throw msgError;
 
@@ -113,7 +116,9 @@ export async function GET() {
             req.messages.sort((a: any, b: any) => new Date(a.time).getTime() - new Date(b.time).getTime());
         });
 
-        return NextResponse.json({ upgrades: upgradeRequests });
+        const response = NextResponse.json({ upgrades: upgradeRequests });
+        response.headers.set('Cache-Control', 'private, max-age=10, stale-while-revalidate=30');
+        return response;
     } catch (error: any) {
         console.error('Admin upgrades safe-sync error:', error);
         return serverErrorResponse();

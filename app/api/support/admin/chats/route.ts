@@ -13,14 +13,13 @@ export async function GET() {
             return forbiddenResponse();
         }
 
-        // Fetch ONLY SUPPORT-subject messages — Activation messages go to the Activation Hub only
-        // Fetch BOTH active and closed support messages — Activation messages go to the Activation Hub only
+        // Only fetch the columns we actually use — skip large unused fields
         const { data: messagesResult, error: msgError } = await supabaseAdmin
             .from('support_messages')
-            .select('*')
+            .select('id, user_id, sender_id, sender, message_text, subject, created_at')
             .in('subject', ['SUPPORT', 'CLOSED_SUPPORT'])
             .order('created_at', { ascending: false })
-            .limit(500);
+            .limit(200);
 
         if (msgError) throw msgError;
 
@@ -86,7 +85,9 @@ export async function GET() {
         const activeChats = allChats.filter((c: any) => !c.isClosed);
         const closedChats = allChats.filter((c: any) => c.isClosed);
 
-        return NextResponse.json({ chats: activeChats, closedChats });
+        const response = NextResponse.json({ chats: activeChats, closedChats });
+        response.headers.set('Cache-Control', 'private, max-age=10, stale-while-revalidate=30');
+        return response;
     } catch (error: any) {
         console.error('Admin support sync error:', error);
         return serverErrorResponse();
