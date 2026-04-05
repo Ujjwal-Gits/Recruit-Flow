@@ -2,9 +2,15 @@
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
 
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
 :root {
-  --font-inter: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  --font-inter: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
 }
 
 body {
@@ -15,38 +21,49 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   color: #0f172a; /* slate-900 */
   font-weight: 600;
   letter-spacing: -0.025em;
 }
 
 .flip-book {
-    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1);
 }
 
 .page {
-    background-color: white;
+  background-color: white;
 }
 
 .custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
+  width: 6px;
 }
 .custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
+  background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #e2e8f0;
-    border-radius: 10px;
+  background: #e2e8f0;
+  border-radius: 10px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: #cbd5e1;
+  background: #cbd5e1;
 }
 
 @keyframes float {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-  100% { transform: translateY(0px); }
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
 }
 
 .animate-float {
@@ -54,11 +71,12 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @keyframes skeleton-slow {
-  0%, 100% { 
+  0%,
+  100% {
     opacity: 0.5;
     transform: scale(1);
   }
-  50% { 
+  50% {
     opacity: 1;
     transform: scale(1.002);
   }
@@ -78,7 +96,9 @@ div[class*="nextjs-portal"] {
 
 @media print {
   /* Hide Next.js features and sidebar/main content during print */
-  aside, main, nav {
+  aside,
+  main,
+  nav {
     display: none !important;
   }
 
@@ -106,7 +126,8 @@ div[class*="nextjs-portal"] {
   }
 
   /* Hide close button and action footer */
-  button, .bg-slate-50 {
+  button,
+  .bg-slate-50 {
     display: none !important;
   }
 

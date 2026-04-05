@@ -217,9 +217,21 @@ export default function CRMSection({ user, mailSettings, initialCandidates }: { 
             <div className="bg-white border border-slate-100 rounded shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] overflow-hidden">
                 <div className="overflow-x-auto">
                 {loadingCandidates ? (
-                    <div className="flex items-center justify-center py-20">
-                        <BouncyLoader />
-                    </div>
+                    <table className="w-full min-w-[640px]">
+                        <tbody className="divide-y divide-slate-50">
+                            {[...Array(5)].map((_, i) => (
+                                <tr key={i}>
+                                    {[...Array(8)].map((_, j) => (
+                                        <td key={j} className="px-6 py-4">
+                                            <div className="h-4 bg-slate-100 rounded-sm relative overflow-hidden" style={{ width: `${40 + j * 10}px` }}>
+                                                <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/60 to-transparent" />
+                                            </div>
+                                        </td>
+                                    ))}
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
                 ) : filteredCandidates.length === 0 ? (
                     <div className="py-16 text-center">
                         <Users className="size-10 text-slate-200 mx-auto mb-4" />

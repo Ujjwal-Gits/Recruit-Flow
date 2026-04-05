@@ -60,8 +60,63 @@ export default function ApplyPageClient({ jobId }: { jobId: string }) {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-white flex items-center justify-center">
-                <BouncyLoader />
+            <div className="min-h-screen bg-[#fafafa]">
+                <header className="bg-white border-b border-slate-100 h-20 flex items-center px-6">
+                    <div className="w-full max-w-[1200px] mx-auto flex items-center justify-between">
+                        <div className="h-8 w-32 bg-slate-100 rounded-sm relative overflow-hidden">
+                            <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/60 to-transparent" />
+                        </div>
+                        <div className="h-7 w-28 bg-slate-100 rounded-sm" />
+                    </div>
+                </header>
+                <div className="max-w-[1200px] mx-auto px-6 pt-16 flex flex-col md:flex-row gap-16">
+                    <div className="flex-1 space-y-8">
+                        <div className="space-y-4">
+                            <div className="h-3 w-32 bg-slate-100 rounded-sm" />
+                            <div className="h-14 w-3/4 bg-slate-100 rounded-sm relative overflow-hidden">
+                                <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/60 to-transparent" />
+                            </div>
+                            <div className="h-6 w-48 bg-slate-100 rounded-sm" />
+                        </div>
+                        <div className="bg-white border border-slate-100 p-8 rounded space-y-3">
+                            <div className="h-3 w-24 bg-slate-100 rounded-sm mb-6" />
+                            {[...Array(5)].map((_, i) => (
+                                <div key={i} className="h-4 bg-slate-100 rounded-sm relative overflow-hidden" style={{ width: i % 3 === 2 ? '75%' : '100%' }}>
+                                    <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/60 to-transparent" />
+                                </div>
+                            ))}
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            {[...Array(4)].map((_, i) => (
+                                <div key={i} className="bg-white border border-slate-100 p-6 rounded space-y-2">
+                                    <div className="h-3 w-20 bg-slate-100 rounded-sm" />
+                                    <div className="h-5 w-28 bg-slate-100 rounded-sm" />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="w-full md:w-[480px]">
+                        <div className="bg-white border border-slate-100 p-10 rounded space-y-6">
+                            <div className="flex items-center gap-3">
+                                <div className="size-10 bg-slate-100 rounded" />
+                                <div className="space-y-2">
+                                    <div className="h-5 w-24 bg-slate-100 rounded-sm" />
+                                    <div className="h-3 w-32 bg-slate-100 rounded-sm" />
+                                </div>
+                            </div>
+                            {[...Array(3)].map((_, i) => (
+                                <div key={i} className="space-y-2">
+                                    <div className="h-3 w-24 bg-slate-100 rounded-sm" />
+                                    <div className="h-10 w-full bg-slate-100 rounded-sm relative overflow-hidden">
+                                        <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/60 to-transparent" />
+                                    </div>
+                                </div>
+                            ))}
+                            <div className="h-12 w-full bg-slate-100 rounded-sm" />
+                        </div>
+                    </div>
+                </div>
+                <style>{`@keyframes shimmer { 100% { transform: translateX(100%); } }`}</style>
             </div>
         );
     }

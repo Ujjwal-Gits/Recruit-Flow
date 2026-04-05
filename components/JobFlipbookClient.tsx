@@ -766,8 +766,44 @@ export default function JobFlipbookClient({ jobId }: { jobId: string }) {
 
     if (authLoading || loading) {
         return (
-            <div className="min-h-screen bg-[#fafafa] flex items-center justify-center">
-                <Loader2 className="w-10 h-10 animate-spin text-slate-300" />
+            <div className="min-h-screen bg-[#fafafa] flex flex-col">
+                {/* Nav skeleton */}
+                <div className="h-16 bg-white border-b border-slate-100 flex items-center px-6 gap-4">
+                    <div className="h-7 w-28 bg-slate-100 rounded-sm" />
+                    <div className="flex-1" />
+                    <div className="h-8 w-24 bg-slate-100 rounded-sm" />
+                    <div className="h-8 w-24 bg-slate-100 rounded-sm" />
+                    <div className="h-8 w-28 bg-slate-100 rounded-sm" />
+                </div>
+                {/* Toolbar skeleton */}
+                <div className="h-14 bg-white border-b border-slate-100 flex items-center px-6 gap-4">
+                    <div className="h-8 w-48 bg-slate-100 rounded-sm" />
+                    <div className="h-px w-4 bg-slate-200" />
+                    <div className="h-8 w-64 bg-slate-100 rounded-sm" />
+                    <div className="flex-1" />
+                    <div className="h-8 w-32 bg-slate-100 rounded-sm" />
+                </div>
+                {/* Content skeleton — card stack */}
+                <div className="flex-1 flex items-center justify-center p-12">
+                    <div className="w-full max-w-2xl space-y-6">
+                        {[...Array(2)].map((_, i) => (
+                            <div key={i} className="bg-white border border-slate-100 rounded-xl p-6 space-y-4 relative overflow-hidden">
+                                <div className="flex items-start justify-between">
+                                    <div className="space-y-2">
+                                        <div className="h-6 w-48 bg-slate-100 rounded-sm" />
+                                        <div className="h-4 w-32 bg-slate-100 rounded-sm" />
+                                    </div>
+                                    <div className="h-10 w-16 bg-slate-100 rounded-sm" />
+                                </div>
+                                <div className="h-4 w-full bg-slate-100 rounded-sm" />
+                                <div className="h-4 w-4/5 bg-slate-100 rounded-sm" />
+                                <div className="h-4 w-3/4 bg-slate-100 rounded-sm" />
+                                <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+                <style>{`@keyframes shimmer { 100% { transform: translateX(100%); } }`}</style>
             </div>
         );
     }
