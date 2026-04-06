@@ -22,8 +22,8 @@ const CRMCandidateRow = memo(({ c, user, setPreviewUrl, setMailTarget, statusCol
                 <p className="text-sm font-bold text-slate-900">{c.name}</p>
             </td>
             <td className="px-6 py-4 text-xs text-slate-500 font-medium">{c.email}</td>
-            <td className="px-6 py-4">
-                <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded border border-slate-100 whitespace-nowrap block max-w-[120px] truncate" title={c.job_title}>{c.job_title}</span>
+            <td className="px-4 py-4">
+                <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded border border-slate-100 whitespace-nowrap inline-block max-w-full truncate" title={c.job_title}>{c.job_title}</span>
             </td>
             <td className="px-6 py-4 text-sm font-black text-slate-900">{c.ats_score}%</td>
             <td className="px-6 py-4">
@@ -239,6 +239,16 @@ export default function CRMSection({ user, mailSettings, initialCandidates }: { 
                     </div>
                 ) : (
                     <table className="w-full text-left min-w-[640px]">
+                        <colgroup>
+                            <col style={{ width: '130px' }} />
+                            <col style={{ width: '200px' }} />
+                            <col style={{ width: '150px' }} />
+                            <col style={{ width: '60px' }} />
+                            <col style={{ width: '90px' }} />
+                            <col style={{ width: '70px' }} />
+                            <col style={{ width: '80px' }} />
+                            <col style={{ width: '70px' }} />
+                        </colgroup>
                         <thead className="border-b border-slate-100 bg-slate-50/50">
                             <tr>
                                 <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Candidate</th>
