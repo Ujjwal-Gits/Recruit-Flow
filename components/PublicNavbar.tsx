@@ -98,7 +98,7 @@ export default function PublicNavbar() {
                 {/* Desktop nav links */}
                 <div className="hidden md:flex items-center gap-10 absolute left-1/2 -translate-x-1/2">
                     {navLinks.map(({ href, label }) => (
-                        <Link key={href} href={href}
+                        <Link key={href} href={href} prefetch={true}
                             className={`text-xs font-semibold tracking-tight transition-colors ${pathname === href ? 'text-slate-900 font-bold' : 'text-slate-500 hover:text-slate-900'}`}>
                             {label}
                         </Link>

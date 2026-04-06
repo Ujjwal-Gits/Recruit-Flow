@@ -1,4 +1,4 @@
-/**
+﻿/**
  * DashboardClient.tsx
  *
  * Implements the main user dashboard for job management, candidate CRM, and analytics.
@@ -734,7 +734,7 @@ function SupportChatInline({ userId }: { userId: string }) {
         const textToUse = content || inputText;
         if (!textToUse.trim()) return;
 
-        // Optimistic rendering — show message instantly before server confirms
+        // Optimistic rendering â€” show message instantly before server confirms
         const optimisticMsg = {
             id: `temp-${Date.now()}`,
             sender: 'user',
@@ -847,7 +847,7 @@ export default function DashboardClient() {
     const [newJob, setNewJob] = useState({ title: '', description: '', workMode: 'Remote', deadline: '', jobType: 'Full-time', education: 'Bachelor', experience: ['Fresher'], links: [{ label: 'LinkedIn' }] as { label: string }[] });
     const [createdJob, setCreatedJob] = useState<Job | null>(null);
     const [user, setUser] = useState<any>(null);
-    // Prefetched data — loaded once on mount, passed as props to avoid refetch on tab switch
+    // Prefetched data â€” loaded once on mount, passed as props to avoid refetch on tab switch
     const [crmCandidates, setCrmCandidates] = useState<CRMCandidate[]>([]);
     const [meetingsData, setMeetingsData] = useState<Meeting[]>([]);
     
@@ -871,9 +871,9 @@ export default function DashboardClient() {
     const [mailSettings, setMailSettings] = useState({
         rejectionSubject: 'Update regarding your application for {{ROLE}}',
         rejectionBody: 'Dear {{NAME}},\n\nThank you for applying for the {{ROLE}} position at {{COMPANY}}. Unfortunately, we will not be moving forward due to: {{REASONS}}.\n\nBest regards,\n{{COMPANY}}',
-        virtualSubject: 'Invitation to Virtual Interview — {{ROLE}}',
+        virtualSubject: 'Invitation to Virtual Interview â€” {{ROLE}}',
         virtualBody: 'Dear {{NAME}},\n\nWe are impressed with your profile, particularly regarding {{REASONS}}. We would like to invite you for a virtual interview for the {{ROLE}} role at {{COMPANY}}.\n\nMeeting Details:\nLink: {{LINK}}\nTime: {{START}} - {{END}}\n\nBest regards,\n{{COMPANY}}',
-        onsiteSubject: 'Invitation to On-site Interview — {{ROLE}}',
+        onsiteSubject: 'Invitation to On-site Interview â€” {{ROLE}}',
         onsiteBody: 'Dear {{NAME}},\n\nWe are impressed with your profile, particularly regarding {{REASONS}}. We would like to invite you for an on-site interview for the {{ROLE}} role at {{COMPANY}}.\n\nPlease visit our office at:\nLocation: {{LOCATION}}\nTime: {{START}} - {{END}}\n\nBest regards,\n{{COMPANY}}',
         meetLink: '',
         location: ''
@@ -888,7 +888,7 @@ export default function DashboardClient() {
         }));
     };
 
-    // Auth Guard — fetches all data in PARALLEL for speed — v2
+    // Auth Guard â€” fetches all data in PARALLEL for speed â€” v2
     useEffect(() => {
         const checkAuth = async () => {
             try {
@@ -1937,7 +1937,7 @@ export default function DashboardClient() {
                                         </div>
                                     </div>
 
-                                    {/* Description — only this section scrolls */}
+                                    {/* Description â€” only this section scrolls */}
                                     <div className="space-y-1.5">
                                         <div className="flex items-center justify-between">
                                             <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Context / Description</label>
@@ -2005,5 +2005,6 @@ export default function DashboardClient() {
         </div>
     );
 }
+
 
 
