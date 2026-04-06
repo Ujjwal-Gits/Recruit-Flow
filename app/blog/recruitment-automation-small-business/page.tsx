@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import PublicNavbar from '@/components/PublicNavbar';
+import PublicFooter from '@/components/PublicFooter';
 
 export const metadata: Metadata = {
     title: 'Recruitment Automation for Small Businesses: Where to Start | Recruit Flow Blog',
@@ -107,6 +108,7 @@ export default function BlogPost4() {
                     </div>
                 </div>
             </article>
+            <PublicFooter />
         </div>
     );
 }

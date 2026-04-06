@@ -73,9 +73,10 @@ export default function PublicNavbar() {
     const dashboardHref = isAdmin ? '/iamadmin' : '/dashboard';
 
     const navLinks = [
-        { href: '/about', label: 'About Us' },
+        { href: '/features', label: 'Features' },
+        { href: '/how-it-works', label: 'How It Works' },
         { href: '/pricing', label: 'Pricing' },
-        { href: '/contact', label: 'Contact Us' },
+        { href: '/blog', label: 'Blog' },
     ];
 
     const handleLogout = async () => {

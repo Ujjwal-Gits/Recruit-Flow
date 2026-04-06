@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import PublicNavbar from '@/components/PublicNavbar';
+import PublicFooter from '@/components/PublicFooter';
 
 export const metadata: Metadata = {
     title: 'The Complete Guide to AI Resume Screening in 2026 | Recruit Flow Blog',
@@ -178,6 +179,7 @@ export default function BlogPost1() {
                     </div>
                 </div>
             </article>
+            <PublicFooter />
         </div>
     );
 }

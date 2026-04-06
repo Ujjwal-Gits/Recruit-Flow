@@ -1,11 +1,12 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import PublicNavbar from '@/components/PublicNavbar';
+import PublicFooter from '@/components/PublicFooter';
 
 export const metadata: Metadata = {
     title: 'Recruitment Blog — AI Hiring Tips, ATS Guides & Talent Acquisition Strategies | Recruit Flow',
     description: 'Expert guides on AI recruitment, ATS optimization, resume screening, and modern hiring strategies. Learn how to hire faster and smarter with Recruit Flow.',
-    keywords: 'AI recruitment blog, ATS optimization guide, resume screening tips, talent acquisition strategies, hiring automation, recruitment software tips',
+    keywords: 'AI recruitment blog, ATS optimization guide, resume screening tips, talent acquisition strategies, hiring automation, recruitment software tips, reduce time to hire',
     openGraph: {
         title: 'Recruitment Blog — Recruit Flow',
         description: 'Expert guides on AI hiring, ATS optimization, and modern recruitment strategies.',
@@ -21,7 +22,6 @@ export const posts = [
         category: 'AI Recruitment',
         readTime: '8 min read',
         date: 'April 2, 2026',
-        image: '🤖',
         featured: true,
     },
     {
@@ -31,7 +31,6 @@ export const posts = [
         category: 'Hiring Strategy',
         readTime: '6 min read',
         date: 'March 28, 2026',
-        image: '⚡',
         featured: false,
     },
     {
@@ -41,7 +40,6 @@ export const posts = [
         category: 'ATS Guide',
         readTime: '5 min read',
         date: 'March 20, 2026',
-        image: '📊',
         featured: false,
     },
     {
@@ -51,7 +49,6 @@ export const posts = [
         category: 'Small Business',
         readTime: '7 min read',
         date: 'March 15, 2026',
-        image: '🚀',
         featured: false,
     },
 ];
@@ -67,10 +64,10 @@ export default function BlogPage() {
                 <div className="absolute inset-0 opacity-50" style={{ backgroundImage: 'radial-gradient(#CBD5E1 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
                 <div className="relative max-w-4xl mx-auto px-6 text-center">
                     <span className="inline-block text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-4">Recruit Flow Blog</span>
-                    <h1 className="text-5xl font-black text-slate-900 tracking-tighter mb-4">
+                    <h1 className="text-5xl font-black text-slate-900 tracking-tighter mb-4 leading-tight">
                         Hire smarter.<br />Learn faster.
                     </h1>
-                    <p className="text-lg text-slate-500 font-medium max-w-xl mx-auto">
+                    <p className="text-lg text-slate-500 font-medium max-w-xl mx-auto leading-relaxed">
                         Practical guides on AI recruitment, ATS optimization, and modern hiring strategies.
                     </p>
                 </div>
@@ -81,9 +78,8 @@ export default function BlogPage() {
                     {/* Featured post */}
                     <Link href={`/blog/${featured.slug}`} className="block mb-12 group">
                         <article className="bg-slate-900 rounded-sm p-10 md:p-14 relative overflow-hidden hover:bg-slate-800 transition-all">
-                            <div className="absolute top-8 right-8 text-6xl opacity-20">{featured.image}</div>
                             <span className="inline-block text-[9px] font-black uppercase tracking-widest px-2 py-1 bg-white/10 text-white/60 rounded-sm mb-4">Featured · {featured.category}</span>
-                            <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight mb-4 max-w-2xl group-hover:text-slate-200 transition-colors">{featured.title}</h2>
+                            <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight mb-4 max-w-2xl group-hover:text-slate-200 transition-colors leading-tight">{featured.title}</h2>
                             <p className="text-slate-400 max-w-xl mb-6 leading-relaxed">{featured.excerpt}</p>
                             <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-slate-500">
                                 <span>{featured.date}</span>
@@ -98,11 +94,10 @@ export default function BlogPage() {
                         {rest.map((post) => (
                             <Link key={post.slug} href={`/blog/${post.slug}`} className="group block">
                                 <article className="bg-white border border-slate-100 rounded-sm p-6 h-full hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-                                    <div className="text-3xl mb-4">{post.image}</div>
                                     <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2 block">{post.category}</span>
                                     <h2 className="text-base font-black text-slate-900 mb-3 leading-snug group-hover:text-slate-600 transition-colors">{post.title}</h2>
                                     <p className="text-sm text-slate-500 leading-relaxed mb-4">{post.excerpt}</p>
-                                    <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-slate-400 mt-auto pt-4 border-t border-slate-50">
+                                    <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-slate-400 pt-4 border-t border-slate-50">
                                         <span>{post.date}</span>
                                         <span>·</span>
                                         <span>{post.readTime}</span>
@@ -113,6 +108,8 @@ export default function BlogPage() {
                     </div>
                 </div>
             </section>
+
+            <PublicFooter />
         </div>
     );
 }

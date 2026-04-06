@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import PublicNavbar from '@/components/PublicNavbar';
+import PublicFooter from '@/components/PublicFooter';
 
 export const metadata: Metadata = {
     title: 'What is an ATS Score and Why Every Recruiter Should Care | Recruit Flow Blog',
@@ -83,6 +84,7 @@ export default function BlogPost3() {
                     </div>
                 </div>
             </article>
+            <PublicFooter />
         </div>
     );
 }

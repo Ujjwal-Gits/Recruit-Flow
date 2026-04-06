@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import PublicNavbar from '@/components/PublicNavbar';
+import PublicFooter from '@/components/PublicFooter';
 
 export const metadata: Metadata = {
     title: 'Changelog — Recruit Flow Product Updates & New Features',
@@ -14,12 +15,7 @@ const updates = [
         tag: 'New Feature',
         tagColor: 'bg-emerald-50 text-emerald-700 border-emerald-100',
         title: 'AI Candidate Shortlist',
-        items: [
-            'Enterprise users can now run a one-time AI shortlist per job',
-            'AI ranks top 5 candidates with detailed reasoning, strengths, and gaps',
-            'Results saved permanently to the job record',
-            'Confirmation modal before using the one-time credit',
-        ],
+        items: ['Enterprise users can run a one-time AI shortlist per job', 'AI ranks top 5 candidates with detailed reasoning, strengths, and gaps', 'Results saved permanently to the job record', 'Confirmation modal before using the one-time credit'],
     },
     {
         version: 'v2.3',
@@ -27,12 +23,7 @@ const updates = [
         tag: 'New Feature',
         tagColor: 'bg-emerald-50 text-emerald-700 border-emerald-100',
         title: 'AI Job Description Generator',
-        items: [
-            'Pro and Enterprise users can auto-generate job descriptions with one click',
-            'Respects experience level, education, work mode, and job type selections',
-            'Structured output with sections and bullet points',
-            'Human-sounding tone — no corporate buzzwords',
-        ],
+        items: ['Pro and Enterprise users can auto-generate job descriptions with one click', 'Respects experience level, education, work mode, and job type selections', 'Structured output with sections and bullet points', 'Human-sounding tone — no corporate buzzwords'],
     },
     {
         version: 'v2.2',
@@ -40,13 +31,7 @@ const updates = [
         tag: 'Improvement',
         tagColor: 'bg-blue-50 text-blue-700 border-blue-100',
         title: 'Job Posting Form Redesign',
-        items: [
-            'Removed company name field — now auto-uses profile company name',
-            'Added Job Type dropdown: Full-time, Part-time, Internship',
-            'Added Min. Education dropdown: 10+, +2, Bachelor, Master',
-            'Added Experience multi-select (up to 2 options)',
-            'Apply page now shows all new fields to candidates',
-        ],
+        items: ['Removed company name field — now auto-uses profile company name', 'Added Job Type dropdown: Full-time, Part-time, Internship', 'Added Min. Education dropdown: 10+, +2, Bachelor, Master', 'Added Experience multi-select (up to 2 options)', 'Apply page now shows all new fields to candidates'],
     },
     {
         version: 'v2.1',
@@ -54,25 +39,15 @@ const updates = [
         tag: 'Performance',
         tagColor: 'bg-amber-50 text-amber-700 border-amber-100',
         title: 'Auth & API Speed Improvements',
-        items: [
-            'JWT decoded locally from cookies — eliminates auth server round-trip on cached requests',
-            'Dashboard now prefetches all data in parallel on load',
-            'CRM and Calendar data loaded once and passed as props — no refetch on tab switch',
-            'Support queue queries optimized — select only needed columns, reduced limit to 200',
-        ],
+        items: ['JWT decoded locally from cookies — eliminates auth server round-trip on cached requests', 'Dashboard now prefetches all data in parallel on load', 'CRM and Calendar data loaded once and passed as props — no refetch on tab switch', 'Support queue queries optimized — select only needed columns, reduced limit to 200'],
     },
     {
         version: 'v2.0',
         date: 'February 2026',
         tag: 'Major Release',
-        tagColor: 'bg-violet-50 text-violet-700 border-violet-100',
-        title: 'Enterprise Calendar & Skeleton Loaders',
-        items: [
-            'Interview Calendar moved to Enterprise-only',
-            'Skeleton loaders added across dashboard, apply page, flipbook, and CRM',
-            'Admin dashboard tabs now persist across page refreshes',
-            'Fiscal Assets invoices now save correctly to database',
-        ],
+        tagColor: 'bg-slate-100 text-slate-700 border-slate-200',
+        title: 'ATS Engine Overhaul & Skeleton Loaders',
+        items: ['ATS scoring rebuilt with 5 proper dimensions: skills, experience, title, education, achievements', 'Removed biased company name matching from scoring algorithm', 'Skeleton loaders added across dashboard, apply page, flipbook, and CRM', 'Admin dashboard tabs now persist across page refreshes'],
     },
 ];
 
@@ -95,7 +70,7 @@ export default function ChangelogPage() {
                     {updates.map((u, i) => (
                         <article key={i} className="relative pl-8 border-l-2 border-slate-100">
                             <div className="absolute -left-1.5 top-1 size-3 bg-slate-900 rounded-full" />
-                            <div className="flex items-center gap-3 mb-3">
+                            <div className="flex items-center gap-3 mb-3 flex-wrap">
                                 <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{u.date}</span>
                                 <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-sm border ${u.tagColor}`}>{u.tag}</span>
                                 <span className="text-[10px] font-black text-slate-300">{u.version}</span>
@@ -113,6 +88,8 @@ export default function ChangelogPage() {
                     ))}
                 </div>
             </section>
+
+            <PublicFooter />
         </div>
     );
 }

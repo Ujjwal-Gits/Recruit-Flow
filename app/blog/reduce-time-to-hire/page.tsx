@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import PublicNavbar from '@/components/PublicNavbar';
+import PublicFooter from '@/components/PublicFooter';
 
 export const metadata: Metadata = {
     title: 'How to Reduce Time-to-Hire from 45 Days to Under 2 Weeks | Recruit Flow Blog',
@@ -104,6 +105,7 @@ export default function BlogPost2() {
                     </div>
                 </div>
             </article>
+            <PublicFooter />
         </div>
     );
 }
