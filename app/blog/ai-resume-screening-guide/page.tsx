@@ -1,11 +1,11 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 import Link from 'next/link';
 import PublicNavbar from '@/components/PublicNavbar';
 import PublicFooter from '@/components/PublicFooter';
 
 export const metadata: Metadata = {
-    title: 'The Complete Guide to AI Resume Screening in 2026 | Recruit Flow Blog',
-    description: 'Learn how AI resume screening works, how ATS scores are calculated, and how to implement automated candidate screening without losing the human element in hiring.',
+    title: 'The Complete Guide to AI Resume Screening in 2026',
+    description: 'A complete guide to AI resume screening in 2026: how ATS scoring works, what each dimension measures, and how to implement automated candidate screening without losing human judgment in your hiring process.',
     keywords: 'AI resume screening, automated resume screening, ATS scoring system, AI recruitment software 2026, resume screening tools, candidate screening automation',
     openGraph: {
         title: 'The Complete Guide to AI Resume Screening in 2026',
@@ -24,7 +24,7 @@ export default function BlogPost1() {
                     {/* Header */}
                     <header className="mb-12">
                         <div className="flex items-center gap-3 mb-6">
-                            <Link href="/blog" className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors">← Blog</Link>
+                            <Link href="/blog" className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors">â† Blog</Link>
                             <span className="text-slate-200">/</span>
                             <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">AI Recruitment</span>
                         </div>
@@ -36,9 +36,9 @@ export default function BlogPost1() {
                         </p>
                         <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-slate-400 pb-8 border-b border-slate-100">
                             <span>April 2, 2026</span>
-                            <span>·</span>
+                            <span>Â·</span>
                             <span>8 min read</span>
-                            <span>·</span>
+                            <span>Â·</span>
                             <span>Recruit Flow Team</span>
                         </div>
                     </header>
@@ -47,7 +47,7 @@ export default function BlogPost1() {
                     <div className="prose-custom space-y-8 text-slate-700 leading-relaxed">
 
                         <p className="text-lg">
-                            The average corporate job posting receives <strong className="text-slate-900">250 resumes</strong>. A recruiter spending 6 seconds per resume — the industry average — would need over 25 minutes just to skim them all. That's before any actual evaluation happens.
+                            The average corporate job posting receives <strong className="text-slate-900">250 resumes</strong>. A recruiter spending 6 seconds per resume â€” the industry average â€” would need over 25 minutes just to skim them all. That's before any actual evaluation happens.
                         </p>
 
                         <p>
@@ -61,7 +61,7 @@ export default function BlogPost1() {
                         </p>
 
                         <p>
-                            Modern AI screening tools like Recruit Flow use large language models (specifically Google Gemini) rather than simple keyword matching. This means the AI understands context — it knows that "5 years of React development" is relevant to a "Senior Frontend Engineer" role even if the exact phrase doesn't appear in the job description.
+                            Modern AI screening tools like Recruit Flow use large language models (specifically Google Gemini) rather than simple keyword matching. This means the AI understands context â€” it knows that "5 years of React development" is relevant to a "Senior Frontend Engineer" role even if the exact phrase doesn't appear in the job description.
                         </p>
 
                         <h2 className="text-2xl font-black text-slate-900 mt-12 mb-4">How ATS Scoring Actually Works</h2>
@@ -73,17 +73,17 @@ export default function BlogPost1() {
                         <div className="bg-slate-50 border border-slate-100 rounded-sm p-6 space-y-3">
                             <h3 className="text-sm font-black text-slate-900">Scoring Factors</h3>
                             <ul className="space-y-2 text-sm">
-                                <li className="flex gap-2"><span className="text-slate-400 shrink-0">•</span><span><strong className="text-slate-900">Title alignment (25 points)</strong> — Does the candidate's job title match the role?</span></li>
-                                <li className="flex gap-2"><span className="text-slate-400 shrink-0">•</span><span><strong className="text-slate-900">Skill match (15 points)</strong> — How many required skills appear in the resume?</span></li>
-                                <li className="flex gap-2"><span className="text-slate-400 shrink-0">•</span><span><strong className="text-slate-900">JD keyword overlap (15 points)</strong> — How much of the job description language appears in the resume?</span></li>
-                                <li className="flex gap-2"><span className="text-slate-400 shrink-0">•</span><span><strong className="text-slate-900">Company name match (20 points)</strong> — Has the candidate worked at companies mentioned in the JD?</span></li>
-                                <li className="flex gap-2"><span className="text-slate-400 shrink-0">•</span><span><strong className="text-slate-900">Experience depth (10 points)</strong> — Number of roles and quantified achievements</span></li>
-                                <li className="flex gap-2"><span className="text-slate-400 shrink-0">•</span><span><strong className="text-slate-900">Education (5 points)</strong> — Relevant degree or certification</span></li>
+                                <li className="flex gap-2"><span className="text-slate-400 shrink-0">â€¢</span><span><strong className="text-slate-900">Title alignment (25 points)</strong> â€” Does the candidate's job title match the role?</span></li>
+                                <li className="flex gap-2"><span className="text-slate-400 shrink-0">â€¢</span><span><strong className="text-slate-900">Skill match (15 points)</strong> â€” How many required skills appear in the resume?</span></li>
+                                <li className="flex gap-2"><span className="text-slate-400 shrink-0">â€¢</span><span><strong className="text-slate-900">JD keyword overlap (15 points)</strong> â€” How much of the job description language appears in the resume?</span></li>
+                                <li className="flex gap-2"><span className="text-slate-400 shrink-0">â€¢</span><span><strong className="text-slate-900">Company name match (20 points)</strong> â€” Has the candidate worked at companies mentioned in the JD?</span></li>
+                                <li className="flex gap-2"><span className="text-slate-400 shrink-0">â€¢</span><span><strong className="text-slate-900">Experience depth (10 points)</strong> â€” Number of roles and quantified achievements</span></li>
+                                <li className="flex gap-2"><span className="text-slate-400 shrink-0">â€¢</span><span><strong className="text-slate-900">Education (5 points)</strong> â€” Relevant degree or certification</span></li>
                             </ul>
                         </div>
 
                         <p>
-                            The AI also generates a written summary — 4 paragraphs covering the candidate's fit, specific strengths, relevant experience, and a clear recommendation. This is what makes AI screening genuinely useful: not just a number, but an explanation.
+                            The AI also generates a written summary â€” 4 paragraphs covering the candidate's fit, specific strengths, relevant experience, and a clear recommendation. This is what makes AI screening genuinely useful: not just a number, but an explanation.
                         </p>
 
                         <h2 className="text-2xl font-black text-slate-900 mt-12 mb-4">Why AI Screening is Replacing Manual Review</h2>
@@ -93,7 +93,7 @@ export default function BlogPost1() {
                         </p>
 
                         <p>
-                            <strong className="text-slate-900">1. LLMs can read context, not just keywords.</strong> Earlier ATS systems were essentially keyword matchers — they'd score a resume higher if it contained the exact phrase "project management" rather than understanding that "led a team of 8 engineers" implies project management skills. Modern LLMs understand this context.
+                            <strong className="text-slate-900">1. LLMs can read context, not just keywords.</strong> Earlier ATS systems were essentially keyword matchers â€” they'd score a resume higher if it contained the exact phrase "project management" rather than understanding that "led a team of 8 engineers" implies project management skills. Modern LLMs understand this context.
                         </p>
 
                         <p>
@@ -154,7 +154,7 @@ export default function BlogPost1() {
                                 <span className="text-2xl font-black text-slate-200 shrink-0">4</span>
                                 <div>
                                     <h3 className="text-sm font-black text-slate-900 mb-1">Spot-check the middle range</h3>
-                                    <p className="text-sm text-slate-600">Scores between 40–70 sometimes hide strong candidates with non-traditional backgrounds. Skim the summaries.</p>
+                                    <p className="text-sm text-slate-600">Scores between 40â€“70 sometimes hide strong candidates with non-traditional backgrounds. Skim the summaries.</p>
                                 </div>
                             </div>
                         </div>
@@ -162,7 +162,7 @@ export default function BlogPost1() {
                         <h2 className="text-2xl font-black text-slate-900 mt-12 mb-4">The Bottom Line</h2>
 
                         <p>
-                            AI resume screening doesn't replace recruiters — it removes the part of the job that nobody enjoys: reading hundreds of CVs to find the 10 worth talking to. The human judgment, the culture assessment, the negotiation — that's still yours.
+                            AI resume screening doesn't replace recruiters â€” it removes the part of the job that nobody enjoys: reading hundreds of CVs to find the 10 worth talking to. The human judgment, the culture assessment, the negotiation â€” that's still yours.
                         </p>
 
                         <p>
@@ -183,3 +183,4 @@ export default function BlogPost1() {
         </div>
     );
 }
+

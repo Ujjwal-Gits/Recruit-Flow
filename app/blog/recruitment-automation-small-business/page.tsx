@@ -1,10 +1,10 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 import Link from 'next/link';
 import PublicNavbar from '@/components/PublicNavbar';
 import PublicFooter from '@/components/PublicFooter';
 
 export const metadata: Metadata = {
-    title: 'Recruitment Automation for Small Businesses: Where to Start | Recruit Flow Blog',
+    title: 'Recruitment Automation for Small Businesses: A Practical Starting Guide',
     description: 'Small businesses don\'t need a big HR team to automate hiring. Learn which recruitment tasks to automate first, what tools to use, and how to compete with larger companies for top talent.',
     keywords: 'recruitment automation small business, HR automation for startups, small business hiring tools, affordable ATS for small business, recruitment software SMB',
 };
@@ -17,7 +17,7 @@ export default function BlogPost4() {
                 <div className="max-w-3xl mx-auto">
                     <header className="mb-12">
                         <div className="flex items-center gap-3 mb-6">
-                            <Link href="/blog" className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors">← Blog</Link>
+                            <Link href="/blog" className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors">â† Blog</Link>
                             <span className="text-slate-200">/</span>
                             <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Small Business</span>
                         </div>
@@ -28,7 +28,7 @@ export default function BlogPost4() {
                             You don't need a 10-person HR team to automate hiring. Here's how small businesses and startups can use AI recruitment tools to compete with larger companies for top talent.
                         </p>
                         <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-slate-400 pb-8 border-b border-slate-100">
-                            <span>March 15, 2026</span><span>·</span><span>7 min read</span><span>·</span><span>Recruit Flow Team</span>
+                            <span>March 15, 2026</span><span>Â·</span><span>7 min read</span><span>Â·</span><span>Recruit Flow Team</span>
                         </div>
                     </header>
 
@@ -43,7 +43,7 @@ export default function BlogPost4() {
 
                         <h2 className="text-2xl font-black text-slate-900 mt-12 mb-4">Start Here: Automate Resume Screening First</h2>
                         <p>If you only automate one thing in your hiring process, make it resume screening. This is where the most time is lost, and it's the easiest thing to automate.</p>
-                        <p>With a tool like Recruit Flow, you post a job, share a link, and every applicant gets automatically scored by AI. You don't read a single resume until you've already identified the top candidates. For a small business hiring 2–3 people per year, this alone saves dozens of hours.</p>
+                        <p>With a tool like Recruit Flow, you post a job, share a link, and every applicant gets automatically scored by AI. You don't read a single resume until you've already identified the top candidates. For a small business hiring 2â€“3 people per year, this alone saves dozens of hours.</p>
 
                         <div className="bg-slate-50 border border-slate-100 rounded-sm p-6">
                             <h3 className="text-sm font-black text-slate-900 mb-4">What Recruit Flow's Free Plan Includes</h3>
@@ -62,11 +62,11 @@ export default function BlogPost4() {
                         </div>
 
                         <h2 className="text-2xl font-black text-slate-900 mt-12 mb-4">Build a Professional Application Experience</h2>
-                        <p>Your application process is a candidate's first impression of your company. A clean, professional application page — with your logo, job details, and a simple form — signals that you're a serious employer.</p>
+                        <p>Your application process is a candidate's first impression of your company. A clean, professional application page â€” with your logo, job details, and a simple form â€” signals that you're a serious employer.</p>
                         <p>Recruit Flow generates a branded application page for every job you post. Candidates see your company logo, the job description, required experience and education, and a clean form. No email addresses, no Google Forms, no friction.</p>
 
                         <h2 className="text-2xl font-black text-slate-900 mt-12 mb-4">Define Your Process Before You Post</h2>
-                        <p>The biggest time-waster in small business hiring isn't screening — it's indecision. Before you post a job, answer these questions:</p>
+                        <p>The biggest time-waster in small business hiring isn't screening â€” it's indecision. Before you post a job, answer these questions:</p>
                         <ul className="space-y-2">
                             {[
                                 'What does success look like in this role after 90 days?',
@@ -78,7 +78,7 @@ export default function BlogPost4() {
                                 <li key={i} className="flex gap-2 text-sm"><span className="size-1.5 bg-slate-400 rounded-full shrink-0 mt-1.5" />{q}</li>
                             ))}
                         </ul>
-                        <p>Having these answers before you start means you can move fast when you find the right person — and fast movement is one of the few advantages small businesses have over large companies.</p>
+                        <p>Having these answers before you start means you can move fast when you find the right person â€” and fast movement is one of the few advantages small businesses have over large companies.</p>
 
                         <h2 className="text-2xl font-black text-slate-900 mt-12 mb-4">The Small Business Hiring Stack</h2>
                         <div className="space-y-4">
@@ -112,3 +112,4 @@ export default function BlogPost4() {
         </div>
     );
 }
+

@@ -26,8 +26,16 @@ const caveat = Caveat({
 });
 
 export const metadata: Metadata = {
-    title: "Recruit Flow — AI-Powered Recruitment Platform",
-    description: "AI-powered recruitment management. Post jobs, review candidates, schedule interviews.",
+    title: {
+        default: "Recruit Flow | AI Powered Recruitment Platform",
+        template: "%s | Recruit Flow",
+    },
+    description: "Recruit Flow is an AI-powered recruitment platform that automates resume screening, scores candidates with ATS intelligence, and helps teams hire faster. Post jobs, screen CVs, and manage your entire hiring pipeline in one place.",
+    keywords: "AI recruitment platform, ATS scoring, resume screening software, candidate management, hiring automation, applicant tracking system",
+    openGraph: {
+        siteName: "Recruit Flow",
+        type: "website",
+    },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

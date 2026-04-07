@@ -1,10 +1,10 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 import Link from 'next/link';
 import PublicNavbar from '@/components/PublicNavbar';
 import PublicFooter from '@/components/PublicFooter';
 
 export const metadata: Metadata = {
-    title: 'What is an ATS Score and Why Every Recruiter Should Care | Recruit Flow Blog',
+    title: 'What is an ATS Score and Why Every Recruiter Should Understand It',
     description: 'A plain-English explanation of ATS scores: how they\'re calculated, what makes a resume score high, and how recruiters can use ATS scoring to make better hiring decisions.',
     keywords: 'what is ATS score, ATS scoring explained, applicant tracking system score, resume ATS score, how ATS works, ATS optimization for recruiters',
 };
@@ -17,7 +17,7 @@ export default function BlogPost3() {
                 <div className="max-w-3xl mx-auto">
                     <header className="mb-12">
                         <div className="flex items-center gap-3 mb-6">
-                            <Link href="/blog" className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors">← Blog</Link>
+                            <Link href="/blog" className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors">â† Blog</Link>
                             <span className="text-slate-200">/</span>
                             <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">ATS Guide</span>
                         </div>
@@ -28,19 +28,19 @@ export default function BlogPost3() {
                             A plain-English explanation of how ATS scoring works, what makes a resume score high, and how recruiters can use scores to make better hiring decisions faster.
                         </p>
                         <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-slate-400 pb-8 border-b border-slate-100">
-                            <span>March 20, 2026</span><span>·</span><span>5 min read</span><span>·</span><span>Recruit Flow Team</span>
+                            <span>March 20, 2026</span><span>Â·</span><span>5 min read</span><span>Â·</span><span>Recruit Flow Team</span>
                         </div>
                     </header>
 
                     <div className="space-y-8 text-slate-700 leading-relaxed">
-                        <p className="text-lg">If you've used any modern recruitment software, you've probably seen a number next to each candidate — 78%, 45%, 92%. That's an ATS score. But what does it actually mean, and should you trust it?</p>
+                        <p className="text-lg">If you've used any modern recruitment software, you've probably seen a number next to each candidate â€” 78%, 45%, 92%. That's an ATS score. But what does it actually mean, and should you trust it?</p>
 
                         <h2 className="text-2xl font-black text-slate-900 mt-12 mb-4">ATS Score: The Simple Definition</h2>
                         <p>An ATS (Applicant Tracking System) score is a number that represents how well a candidate's resume matches a specific job description. It's calculated by comparing the content of the resume against the requirements in the job posting.</p>
-                        <p>A score of 90+ means the candidate's background closely matches what you're looking for. A score of 30 means there's a significant mismatch. The score is a starting point for evaluation — not a final verdict.</p>
+                        <p>A score of 90+ means the candidate's background closely matches what you're looking for. A score of 30 means there's a significant mismatch. The score is a starting point for evaluation â€” not a final verdict.</p>
 
                         <h2 className="text-2xl font-black text-slate-900 mt-12 mb-4">How ATS Scores Are Calculated</h2>
-                        <p>Different ATS systems calculate scores differently. Older systems use simple keyword matching — if the resume contains the exact words from the job description, it scores higher. This is why you've probably seen advice telling candidates to "mirror the job description language."</p>
+                        <p>Different ATS systems calculate scores differently. Older systems use simple keyword matching â€” if the resume contains the exact words from the job description, it scores higher. This is why you've probably seen advice telling candidates to "mirror the job description language."</p>
                         <p>Modern AI-powered ATS systems like Recruit Flow use large language models instead. This means the system understands context and synonyms. "Led a cross-functional team" scores well for a "Team Lead" role even without the exact phrase. "Proficient in React" and "5 years of React development" both register as relevant to a frontend role.</p>
 
                         <div className="bg-slate-50 border border-slate-100 rounded-sm p-6">
@@ -63,7 +63,7 @@ export default function BlogPost3() {
                         </div>
 
                         <h2 className="text-2xl font-black text-slate-900 mt-12 mb-4">How to Use ATS Scores Effectively</h2>
-                        <p><strong className="text-slate-900">Use scores as a filter, not a decision.</strong> Sort your candidates by score and start reviewing from the top. But don't automatically reject everyone below a certain threshold — read the AI summary for candidates in the 40–70 range, because non-traditional backgrounds often score lower despite being strong fits.</p>
+                        <p><strong className="text-slate-900">Use scores as a filter, not a decision.</strong> Sort your candidates by score and start reviewing from the top. But don't automatically reject everyone below a certain threshold â€” read the AI summary for candidates in the 40â€“70 range, because non-traditional backgrounds often score lower despite being strong fits.</p>
                         <p><strong className="text-slate-900">Pay attention to the written analysis.</strong> A score of 75 with a summary that says "strong technical skills but limited management experience" tells you something a number alone can't. The written analysis is where the real insight lives.</p>
                         <p><strong className="text-slate-900">Calibrate based on your role.</strong> For highly technical roles with specific skill requirements, a score below 60 is usually a genuine mismatch. For roles where attitude and potential matter more than specific experience, be more flexible with the score.</p>
 
@@ -74,7 +74,7 @@ export default function BlogPost3() {
                                 <li key={i} className="flex gap-2 text-sm"><span className="size-1.5 bg-slate-300 rounded-full shrink-0 mt-1.5" />{item}</li>
                             ))}
                         </ul>
-                        <p>These things require a conversation. ATS scoring gets you to the right conversations faster — it doesn't replace them.</p>
+                        <p>These things require a conversation. ATS scoring gets you to the right conversations faster â€” it doesn't replace them.</p>
 
                         <div className="mt-12 p-8 bg-slate-900 rounded-sm text-center">
                             <h3 className="text-xl font-black text-white mb-2">See ATS scoring in action</h3>
@@ -88,3 +88,4 @@ export default function BlogPost3() {
         </div>
     );
 }
+
