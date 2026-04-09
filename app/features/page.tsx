@@ -4,6 +4,7 @@ export const metadata: Metadata = {
     title: 'AI Recruitment Features — ATS Scoring, Resume Screening & Candidate Management',
     description: 'Explore Recruit Flow features: AI-powered ATS scoring, interactive resume flipbook, candidate CRM, AI job description generator, interview calendar, and bulk PDF export. Built for modern recruitment teams.',
     keywords: 'AI recruitment features, ATS scoring software, resume screening automation, candidate management system, AI hiring tools, recruitment platform features',
+    alternates: { canonical: 'https://recruitflow.app/features' },
     openGraph: { title: 'AI Recruitment Features | Recruit Flow', description: 'Everything your team needs to hire smarter — AI ATS scoring, resume flipbooks, candidate CRM, and more.', type: 'website' },
 };
 import Link from 'next/link';
@@ -79,9 +80,12 @@ const features = [
     },
 ];
 
+
+const pageSchema = {"@context":"https://schema.org","@type":"ItemList","name":"Recruit Flow AI Recruitment Features","itemListElement":[{"@type":"ListItem","position":1,"name":"AI-Powered ATS Scoring","description":"Automated resume scoring across 5 dimensions."},{"@type":"ListItem","position":2,"name":"Interactive Resume Flipbook","description":"Visual candidate review interface."},{"@type":"ListItem","position":3,"name":"Candidate CRM","description":"Cross-job applicant database with email workflows."},{"@type":"ListItem","position":4,"name":"AI Job Description Generator","description":"One-click AI job description creation."},{"@type":"ListItem","position":5,"name":"AI Candidate Shortlist","description":"Enterprise AI ranking of top 5 candidates."}]};
 export default function FeaturesPage() {
     return (
         <div className="min-h-screen bg-white font-sans">
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(pageSchema) }} />
             <PublicNavbar />
 
             {/* Hero */}
@@ -260,6 +264,8 @@ export default function FeaturesPage() {
         </div>
     );
 }
+
+
 
 
 

@@ -4,6 +4,7 @@ export const metadata: Metadata = {
     title: 'Recruitment Use Cases — Recruit Flow for Startups, Agencies and Enterprise Teams',
     description: 'See how Recruit Flow helps startups, recruitment agencies, HR teams, universities, and remote-first companies automate resume screening and hire faster with AI.',
     keywords: 'recruitment software use cases, AI hiring for startups, recruitment agency software, enterprise ATS, HR automation tools, small business hiring',
+    alternates: { canonical: 'https://recruitflow.app/use-cases' },
     openGraph: { title: 'Recruitment Use Cases | Recruit Flow', description: 'Built for every team that hires — from solo founders to enterprise HR departments.', type: 'website' },
 };
 
@@ -13,6 +14,7 @@ export const metadata: Metadata = {
     title: 'Recruitment Use Cases — Startups, Agencies, HR Teams & Enterprise | Recruit Flow',
     description: 'See how Recruit Flow helps startups, recruitment agencies, in-house HR teams, universities, freelance recruiters, and remote-first companies automate hiring and reduce time-to-hire with AI.',
     keywords: 'recruitment software use cases, AI hiring for startups, recruitment agency software, HR automation tools, enterprise hiring platform, small business ATS',
+    alternates: { canonical: 'https://recruitflow.app/use-cases' },
     openGraph: { title: 'Recruitment Use Cases | Recruit Flow', description: 'Built for every team that hires — from solo founders to enterprise HR departments.', type: 'website' },
 };
 import Link from 'next/link';
@@ -98,6 +100,8 @@ const useCases = [
     },
 ];
 
+
+const pageSchema = {"@context":"https://schema.org","@type":"WebPage","name":"Recruitment Use Cases","description":"How different types of organizations use Recruit Flow for AI-powered hiring","mainEntity":{"@type":"ItemList","itemListElement":[{"@type":"ListItem","position":1,"name":"Startups and Scale-ups"},{"@type":"ListItem","position":2,"name":"Recruitment Agencies"},{"@type":"ListItem","position":3,"name":"In-House HR Teams"},{"@type":"ListItem","position":4,"name":"Universities and Institutions"},{"@type":"ListItem","position":5,"name":"Freelance Recruiters"},{"@type":"ListItem","position":6,"name":"Remote-First Companies"}]}};
 export default function UseCasesPage() {
     return (
         <div className="min-h-screen bg-white font-sans">
@@ -230,6 +234,7 @@ export default function UseCasesPage() {
         </div>
     );
 }
+
 
 
 

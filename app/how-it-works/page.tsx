@@ -4,6 +4,7 @@ export const metadata: Metadata = {
     title: 'How Recruit Flow Works — AI Recruitment in 4 Simple Steps',
     description: 'Learn how Recruit Flow automates hiring in 4 steps: post a job, share your link, let AI screen every resume instantly, and hire the best candidate. Setup takes under 2 minutes.',
     keywords: 'how AI recruitment works, automated hiring process, resume screening steps, recruitment workflow, ATS setup guide',
+    alternates: { canonical: 'https://recruitflow.app/how-it-works' },
     openGraph: { title: 'How Recruit Flow Works | Recruit Flow', description: 'Post a job, share a link, AI screens every resume, you hire the best. See the full process.', type: 'website' },
 };
 
@@ -13,6 +14,7 @@ export const metadata: Metadata = {
     title: 'How Recruit Flow Works — AI Recruitment in 4 Simple Steps',
     description: 'Learn how Recruit Flow automates your hiring process: post a job in 2 minutes, share your application link, let AI screen every resume instantly, and hire the best candidate. No manual screening required.',
     keywords: 'how AI recruitment works, automated hiring process, resume screening steps, recruitment workflow, ATS setup guide, how to use recruitment software',
+    alternates: { canonical: 'https://recruitflow.app/how-it-works' },
     openGraph: { title: 'How Recruit Flow Works | Recruit Flow', description: 'Post a job, share a link, let AI screen every resume, and hire faster. See the 4-step process.', type: 'website' },
 };
 import Link from 'next/link';
@@ -83,9 +85,12 @@ const faqs = [
     },
 ];
 
+
+const pageSchema = {"@context":"https://schema.org","@type":"HowTo","name":"How to Use Recruit Flow for AI Recruitment","description":"Set up AI-powered recruitment in 4 steps using Recruit Flow","step":[{"@type":"HowToStep","position":1,"name":"Create Your Job Posting","text":"Set up a job in under 2 minutes with title, work mode, experience requirements, and employment type."},{"@type":"HowToStep","position":2,"name":"Share Your Application Link","text":"Share the unique public application URL on LinkedIn, your careers page, or directly with candidates."},{"@type":"HowToStep","position":3,"name":"AI Screens Every Resume","text":"Gemini AI automatically scores every resume across 5 dimensions in under 10 seconds."},{"@type":"HowToStep","position":4,"name":"Review and Hire","text":"Browse candidates sorted by ATS score, read AI summaries, and make hiring decisions."}]};
 export default function HowItWorksPage() {
     return (
         <div className="min-h-screen bg-white font-sans">
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(pageSchema) }} />
             <PublicNavbar />
 
             {/* Hero */}
@@ -236,6 +241,8 @@ export default function HowItWorksPage() {
         </div>
     );
 }
+
+
 
 
 

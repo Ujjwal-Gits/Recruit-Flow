@@ -6,12 +6,40 @@ import PublicFooter from '@/components/PublicFooter';
 export const metadata: Metadata = {
     title: 'What is an ATS Score and Why Every Recruiter Should Understand It',
     description: 'A plain-English explanation of ATS scores: how they\'re calculated, what makes a resume score high, and how recruiters can use ATS scoring to make better hiring decisions.',
+    alternates: { canonical: 'https://recruitflow.app/blog/ats-score-optimization' },
     keywords: 'what is ATS score, ATS scoring explained, applicant tracking system score, resume ATS score, how ATS works, ATS optimization for recruiters',
 };
 
+
+const articleSchema = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "What is an ATS Score and Why Every Recruiter Should Understand It",
+    "description": "A technical explanation of how ATS scores are calculated across five weighted dimensions and how recruiters can use score data to make faster hiring decisions.",
+    "author": { "@type": "Organization", "name": "Recruit Flow", "url": "https://recruitflow.app" },
+    "publisher": { "@type": "Organization", "name": "Recruit Flow", "logo": { "@type": "ImageObject", "url": "https://recruitflow.app/recruit-flow-logo.png" } },
+    "datePublished": "2026-03-20",
+    "dateModified": "2026-03-20",
+    "mainEntityOfPage": { "@type": "WebPage", "@id": "https://recruitflow.app/blog/ats-score-optimization" },
+    "keywords": "ATS score, applicant tracking system, resume scoring, hiring decisions",
+    "articleSection": "ATS Guide",
+    "wordCount": 800
+};
+
+const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+        { "@type": "Question", "name": "What is an ATS score?", "acceptedAnswer": { "@type": "Answer", "text": "An ATS score is a numerical rating (0-100) that represents how well a candidate's resume matches a specific job description. It is calculated by evaluating skills match, experience relevance, job title alignment, education fit, and quantified achievements." } },
+        { "@type": "Question", "name": "How is an ATS score calculated?", "acceptedAnswer": { "@type": "Answer", "text": "Recruit Flow calculates ATS scores across 5 dimensions: skills and technology match (35 points), experience relevance (25 points), job title alignment (20 points), education fit (10 points), and quantified achievements (10 points)." } },
+        { "@type": "Question", "name": "What is a good ATS score?", "acceptedAnswer": { "@type": "Answer", "text": "A score of 80 or above indicates a strong match and the candidate is recommended for interview. Scores between 60-79 indicate a possible fit worth screening. Below 60 suggests a weak match." } }
+    ]
+};
 export default function BlogPost3() {
     return (
         <div className="min-h-screen bg-white font-sans">
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }} />
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
             <PublicNavbar />
             <article className="pt-32 pb-24 px-6">
                 <div className="max-w-3xl mx-auto">
@@ -88,4 +116,6 @@ export default function BlogPost3() {
         </div>
     );
 }
+
+
 

@@ -7,6 +7,7 @@ export const metadata: Metadata = {
     title: 'How to Reduce Time-to-Hire from 45 Days to Under 2 Weeks',
     description: 'The exact process top recruitment teams use to cut time-to-hire in half. Practical steps to speed up candidate screening, interviews, and decision-making.',
     keywords: 'reduce time to hire, faster hiring process, time to hire optimization, recruitment speed, hiring efficiency, talent acquisition speed',
+    alternates: { canonical: 'https://recruitflow.app/blog/reduce-time-to-hire' },
     openGraph: {
         title: 'How to Reduce Time-to-Hire from 45 Days to Under 2 Weeks',
         description: 'The exact process top-performing recruitment teams use to cut hiring time in half without sacrificing quality.',
@@ -14,9 +15,25 @@ export const metadata: Metadata = {
     },
 };
 
+
+const articleSchema = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "How to Reduce Time-to-Hire from 45 Days to Under 2 Weeks",
+    "description": "The exact process high-performing recruitment teams use to cut hiring time in half with specific steps for automating screening and eliminating scheduling friction.",
+    "author": { "@type": "Organization", "name": "Recruit Flow", "url": "https://recruitflow.app" },
+    "publisher": { "@type": "Organization", "name": "Recruit Flow", "logo": { "@type": "ImageObject", "url": "https://recruitflow.app/recruit-flow-logo.png" } },
+    "datePublished": "2026-03-28",
+    "dateModified": "2026-03-28",
+    "mainEntityOfPage": { "@type": "WebPage", "@id": "https://recruitflow.app/blog/reduce-time-to-hire" },
+    "keywords": "reduce time to hire, hiring efficiency, recruitment automation, faster hiring",
+    "articleSection": "Hiring Strategy",
+    "wordCount": 900
+};
 export default function BlogPost2() {
     return (
         <div className="min-h-screen bg-white font-sans">
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }} />
             <PublicNavbar />
             <article className="pt-32 pb-24 px-6">
                 <div className="max-w-3xl mx-auto">
@@ -109,4 +126,6 @@ export default function BlogPost2() {
         </div>
     );
 }
+
+
 

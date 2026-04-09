@@ -6,12 +6,29 @@ import PublicFooter from '@/components/PublicFooter';
 export const metadata: Metadata = {
     title: 'Recruitment Automation for Small Businesses: A Practical Starting Guide',
     description: 'Small businesses don\'t need a big HR team to automate hiring. Learn which recruitment tasks to automate first, what tools to use, and how to compete with larger companies for top talent.',
+    alternates: { canonical: 'https://recruitflow.app/blog/recruitment-automation-small-business' },
     keywords: 'recruitment automation small business, HR automation for startups, small business hiring tools, affordable ATS for small business, recruitment software SMB',
 };
 
+
+const articleSchema = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "Recruitment Automation for Small Businesses: A Practical Starting Guide",
+    "description": "Small businesses competing for top talent need a structured hiring process. Learn which recruitment tasks to automate first and how to build a professional candidate experience.",
+    "author": { "@type": "Organization", "name": "Recruit Flow", "url": "https://recruitflow.app" },
+    "publisher": { "@type": "Organization", "name": "Recruit Flow", "logo": { "@type": "ImageObject", "url": "https://recruitflow.app/recruit-flow-logo.png" } },
+    "datePublished": "2026-03-15",
+    "dateModified": "2026-03-15",
+    "mainEntityOfPage": { "@type": "WebPage", "@id": "https://recruitflow.app/blog/recruitment-automation-small-business" },
+    "keywords": "recruitment automation, small business hiring, affordable ATS, HR automation",
+    "articleSection": "Small Business",
+    "wordCount": 1000
+};
 export default function BlogPost4() {
     return (
         <div className="min-h-screen bg-white font-sans">
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }} />
             <PublicNavbar />
             <article className="pt-32 pb-24 px-6">
                 <div className="max-w-3xl mx-auto">
@@ -112,4 +129,6 @@ export default function BlogPost4() {
         </div>
     );
 }
+
+
 

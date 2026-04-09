@@ -7,6 +7,7 @@ export const metadata: Metadata = {
     title: 'The Complete Guide to AI Resume Screening in 2026',
     description: 'A complete guide to AI resume screening in 2026: how ATS scoring works, what each dimension measures, and how to implement automated candidate screening without losing human judgment in your hiring process.',
     keywords: 'AI resume screening, automated resume screening, ATS scoring system, AI recruitment software 2026, resume screening tools, candidate screening automation',
+    alternates: { canonical: 'https://recruitflow.app/blog/ai-resume-screening-guide' },
     openGraph: {
         title: 'The Complete Guide to AI Resume Screening in 2026',
         description: 'How AI-powered ATS scoring works, why it\'s replacing manual screening, and how to implement it in your hiring process.',
@@ -14,9 +15,25 @@ export const metadata: Metadata = {
     },
 };
 
+
+const articleSchema = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "The Complete Guide to AI Resume Screening in 2026",
+    "description": "A complete guide to AI resume screening: how ATS scoring works, what each dimension measures, and how to implement automated candidate screening.",
+    "author": { "@type": "Organization", "name": "Recruit Flow", "url": "https://recruitflow.app" },
+    "publisher": { "@type": "Organization", "name": "Recruit Flow", "logo": { "@type": "ImageObject", "url": "https://recruitflow.app/recruit-flow-logo.png" } },
+    "datePublished": "2026-04-02",
+    "dateModified": "2026-04-02",
+    "mainEntityOfPage": { "@type": "WebPage", "@id": "https://recruitflow.app/blog/ai-resume-screening-guide" },
+    "keywords": "AI resume screening, ATS scoring, automated hiring, recruitment automation",
+    "articleSection": "AI Recruitment",
+    "wordCount": 1200
+};
 export default function BlogPost1() {
     return (
         <div className="min-h-screen bg-white font-sans">
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }} />
             <PublicNavbar />
 
             <article className="pt-32 pb-24 px-6">
@@ -183,4 +200,6 @@ export default function BlogPost1() {
         </div>
     );
 }
+
+
 
