@@ -1,16 +1,6 @@
 ﻿import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-    title: 'Recruitment Use Cases — Recruit Flow for Startups, Agencies and Enterprise Teams',
-    description: 'See how Recruit Flow helps startups, recruitment agencies, HR teams, universities, and remote-first companies automate resume screening and hire faster with AI.',
-    keywords: 'recruitment software use cases, AI hiring for startups, recruitment agency software, enterprise ATS, HR automation tools, small business hiring',
-    alternates: { canonical: 'https://recruitflow.app/use-cases' },
-    openGraph: { title: 'Recruitment Use Cases | Recruit Flow', description: 'Built for every team that hires — from solo founders to enterprise HR departments.', type: 'website' },
-};
-
-import type { Metadata } from 'next';
-
-export const metadata: Metadata = {
     title: 'Recruitment Use Cases — Startups, Agencies, HR Teams & Enterprise | Recruit Flow',
     description: 'See how Recruit Flow helps startups, recruitment agencies, in-house HR teams, universities, freelance recruiters, and remote-first companies automate hiring and reduce time-to-hire with AI.',
     keywords: 'recruitment software use cases, AI hiring for startups, recruitment agency software, HR automation tools, enterprise hiring platform, small business ATS',
@@ -24,7 +14,7 @@ import PublicFooter from '@/components/PublicFooter';
 
 const fadeInUp = {
     hidden: { opacity: 0, y: 24 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] as any } },
 };
 
 const stagger = {
@@ -234,6 +224,7 @@ export default function UseCasesPage() {
         </div>
     );
 }
+
 
 
 
