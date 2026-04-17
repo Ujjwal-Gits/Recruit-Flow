@@ -97,7 +97,7 @@ export default function UseCasesPage() {
         <div className="min-h-screen bg-white font-sans">
             <PublicNavbar />
 
-            {/* Hero */}
+            {/* Hero — introduces the page and sets context for who Recruit Flow is built for */}
             <section className="pt-32 pb-20 bg-[#fafafa] border-b border-slate-100 relative overflow-hidden">
                 <div className="absolute inset-0 opacity-50" style={{ backgroundImage: 'radial-gradient(#CBD5E1 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
                 <motion.div
