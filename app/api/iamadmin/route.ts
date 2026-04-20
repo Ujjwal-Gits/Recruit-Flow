@@ -80,7 +80,7 @@ export async function GET() {
         const upgradesObj: Record<string, any> = {};
 
         rawMessages?.forEach(m => {
-            const text = (m.message_text || m.content || '').toLowerCase();
+            const text = (m.message_text || '').toLowerCase();
             const subject = (m.subject || '').toUpperCase();
             
             const isActivation = subject === 'ACTIVATION' || 
@@ -105,7 +105,7 @@ export async function GET() {
                     name: profileMatch.full_name,
                     plan: text.includes('arctic') ? 'Arctic Pro' : (text.includes('enterprise') ? 'Enterprise' : 'Pro'),
                     lastMessage: {
-                        text: m.message_text || m.content || '',
+                        text: m.message_text || '',
                         time: m.created_at
                     },
                     time: m.created_at,
@@ -117,7 +117,7 @@ export async function GET() {
             targetObj[uid].messages.push({
                 id: m.id,
                 sender: m.sender_id === uid || m.sender === 'user' ? 'user' : 'support',
-                text: m.message_text || m.content || '',
+                text: m.message_text || '',
                 time: m.created_at,
                 image_url: m.image_url,
                 subject: m.subject

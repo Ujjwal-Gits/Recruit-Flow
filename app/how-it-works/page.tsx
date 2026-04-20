@@ -1,12 +1,3 @@
-﻿import type { Metadata } from 'next';
-
-export const metadata: Metadata = {
-    title: 'How Recruit Flow Works — AI Recruitment in 4 Simple Steps',
-    description: 'Learn how Recruit Flow automates hiring in 4 steps: post a job, share your link, let AI screen every resume instantly, and hire the best candidate. Setup takes under 2 minutes.',
-    keywords: 'how AI recruitment works, automated hiring process, resume screening steps, recruitment workflow, ATS setup guide',
-    alternates: { canonical: 'https://recruitflow.app/how-it-works' },
-    openGraph: { title: 'How Recruit Flow Works | Recruit Flow', description: 'Post a job, share a link, AI screens every resume, you hire the best. See the full process.', type: 'website' },
-};
 
 import type { Metadata } from 'next';
 

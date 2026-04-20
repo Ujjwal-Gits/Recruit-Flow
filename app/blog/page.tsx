@@ -1,11 +1,3 @@
-﻿import type { Metadata } from 'next';
-
-export const metadata: Metadata = {
-    title: 'Recruitment Blog — AI Hiring Tips, ATS Guides and Talent Acquisition Strategies',
-    description: 'Expert guides on AI recruitment, ATS scoring, resume screening automation, and modern hiring strategies. Learn how to hire faster and smarter with Recruit Flow.',
-    keywords: 'AI recruitment blog, ATS optimization guide, resume screening tips, talent acquisition strategies, hiring automation, reduce time to hire',
-    openGraph: { title: 'Recruitment Blog | Recruit Flow', description: 'Expert guides on AI hiring, ATS optimization, and modern recruitment strategies.', type: 'website' },
-};
 
 import type { Metadata } from 'next';
 

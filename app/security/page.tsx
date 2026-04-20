@@ -1,12 +1,3 @@
-﻿import type { Metadata } from 'next';
-
-export const metadata: Metadata = {
-    title: 'Security and Data Privacy — Enterprise-Grade Recruitment Security',
-    description: 'Recruit Flow protects candidate data with JWT authentication, Row-Level Security, OTP verification, rate limiting, TLS encryption, and complete account data isolation.',
-    keywords: 'recruitment software security, HR data privacy, secure ATS platform, candidate data protection, GDPR recruitment software, data isolation',
-    alternates: { canonical: 'https://recruitflow.app/security' },
-    openGraph: { title: 'Security and Data Privacy | Recruit Flow', description: 'Enterprise-grade security at every layer — from authentication to database access to file storage.', type: 'website' },
-};
 
 import type { Metadata } from 'next';
 

@@ -1,11 +1,3 @@
-﻿import type { Metadata } from 'next';
-
-export const metadata: Metadata = {
-    title: 'Careers at Recruit Flow — Join the Team Building the Future of Hiring',
-    description: 'Join Recruit Flow and help build AI-powered recruitment tools that make hiring faster and fairer. Remote-first, small team, high ownership, real impact.',
-    keywords: 'careers recruit flow, recruitment software jobs, AI startup careers, remote hiring platform jobs',
-    openGraph: { title: 'Careers | Recruit Flow', description: 'Help us fix how companies hire. Remote-first, small team, real problems.', type: 'website' },
-};
 
 import type { Metadata } from 'next';
 

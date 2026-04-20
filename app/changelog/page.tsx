@@ -1,11 +1,3 @@
-﻿import type { Metadata } from 'next';
-
-export const metadata: Metadata = {
-    title: 'Changelog — Product Updates and New Features',
-    description: 'Stay up to date with the latest Recruit Flow product updates, new AI features, performance improvements, and bug fixes.',
-    keywords: 'recruit flow changelog, recruitment software updates, AI hiring platform updates, new features ATS',
-    openGraph: { title: 'Changelog | Recruit Flow', description: 'Latest product updates, new features, and improvements to Recruit Flow.', type: 'website' },
-};
 
 import type { Metadata } from 'next';
 

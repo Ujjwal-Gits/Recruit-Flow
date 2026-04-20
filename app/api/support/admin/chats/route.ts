@@ -47,7 +47,7 @@ export async function GET() {
             chatsObj[uid].messages.push({
                 id: m.id,
                 sender: m.sender_id === uid || m.sender === 'user' ? 'user' : 'support',
-                text: m.message_text || m.content || '',
+                text: m.message_text || '',
                 time: m.created_at
             });
 

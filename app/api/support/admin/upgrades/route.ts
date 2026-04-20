@@ -43,7 +43,7 @@ export async function GET() {
                 };
             }
 
-            const text = (m.message_text || m.content || '').toLowerCase();
+            const text = (m.message_text || '').toLowerCase();
             const rawSubject = (m.subject || '').toUpperCase();
             
             const isActivation = rawSubject === 'ACTIVATION' || 
@@ -65,7 +65,7 @@ export async function GET() {
                 userThreads[uid].messages.push({
                     id: m.id,
                     sender: m.sender_id === uid || m.sender === 'user' ? 'user' : 'support',
-                    text: m.message_text || m.content || '',
+                    text: m.message_text || '',
                     time: m.created_at,
                     image_url: m.image_url,
                     subject: m.subject || 'GENERAL'

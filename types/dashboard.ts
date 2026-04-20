@@ -12,13 +12,13 @@ export interface Meeting {
     id: string;
     start_time: string;
     end_time: string;
-    mode: string;
+    mode: 'virtual' | 'on-site';
     title: string;
     notes: string;
     status: string;
     candidate_name: string;
     candidate_email: string;
-    application_id?: string | null;
+    application_id: string | null;
 }
 
 export interface CRMCandidate {

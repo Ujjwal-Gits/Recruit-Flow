@@ -29,14 +29,21 @@ export async function GET(req: Request) {
             { email: process.env.FREE_EMAIL, password: defaultPass, name: 'Free User', tier: 'free', role: 'recruiter' }
         ].filter(u => u.email);
 
-        const { data: { users: existingUsers } } = await supabaseAdmin.auth.admin.listUsers() as any;
+        console.log("Seed process: Fetching existing users...");
+        const listResult = await supabaseAdmin.auth.admin.listUsers();
+        if (listResult.error) {
+            console.error("Failed to list users:", listResult.error);
+            return NextResponse.json({ error: "Failed to list users", details: listResult.error }, { status: 500 });
+        }
+
+        const existingUsers = listResult.data.users;
         const createdUsers = [];
 
         for (const user of usersToCreate) {
-            const exists = (existingUsers as any[])?.some((u: any) => u.email === user.email);
+            console.log(`Seed process: Processing ${user.email}...`);
+            const exists = existingUsers?.some((u: any) => u.email === user.email);
             
             if (!exists) {
-                // Create the user with confirmed email
                 const { data: newUser, error } = await supabaseAdmin.auth.admin.createUser({
                     email: user.email,
                     password: user.password,
@@ -45,11 +52,11 @@ export async function GET(req: Request) {
                 });
 
                 if (error) {
-                    console.error(`Failed to create ${user.email}:`, error.message);
+                    console.error(`Failed to create ${user.email}:`, error);
+                    createdUsers.push(`${user.email} (Error: ${error.message})`);
                     continue;
                 }
 
-                // Create the profile
                 await supabaseAdmin.from('profiles').insert({
                     id: newUser.user.id,
                     email: user.email,
@@ -60,19 +67,22 @@ export async function GET(req: Request) {
                 });
                 createdUsers.push(user.email);
             } else {
-                const existingUser = (existingUsers as any[]).find(u => u.email === user.email);
+                const existingUser = existingUsers.find(u => u.email === user.email);
                 if (existingUser) {
-                    const { error: updateErr } = await supabaseAdmin.from('profiles').update({
+                    const { error: updateErr } = await supabaseAdmin.from('profiles').upsert({
+                        id: existingUser.id,
+                        email: user.email,
                         tier: user.tier,
                         role: user.role,
-                        full_name: user.name
-                    }).eq('id', existingUser.id);
+                        full_name: user.name,
+                        updated_at: new Date().toISOString()
+                    });
                     
                     if (updateErr) {
                         console.error(`Update failed for ${user.email}:`, updateErr.message);
-                        createdUsers.push(user.email + " (update error)");
+                        createdUsers.push(user.email + " (Update Error)");
                     } else {
-                        createdUsers.push(user.email + " (forced sync)");
+                        createdUsers.push(user.email + " (Synced)");
                     }
                 }
             }
@@ -84,6 +94,7 @@ export async function GET(req: Request) {
         });
 
     } catch (err: any) {
+        console.error("Seed route panic:", err);
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
 }
